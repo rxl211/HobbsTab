@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { monthLabel } from "../../domain/shared/dates";
+import { monthKeysBetween, monthLabel } from "../../domain/shared/dates";
 import type { MonthlySummary } from "../../domain/summaries/summary-types";
 import { formatCurrency } from "../../lib/formatters";
 
@@ -10,10 +10,31 @@ interface MonthTrendProps {
 
 export const MonthTrend = ({ summaries }: MonthTrendProps) => {
   const [visibleCount, setVisibleCount] = useState(4);
-  const visibleSummaries = summaries.slice(-visibleCount);
-  const max = summaries.reduce((largest, summary) => Math.max(largest, summary.totalSpend), 0);
+  const summaryByMonth = new Map(summaries.map((summary) => [summary.monthKey, summary]));
+  const sortedMonths = [...summaryByMonth.keys()].sort((left, right) => left.localeCompare(right));
+  const orderedSummaries =
+    sortedMonths.length === 0
+      ? []
+      : monthKeysBetween(sortedMonths[0], sortedMonths.at(-1) ?? sortedMonths[0]).map(
+          (monthKey) =>
+            summaryByMonth.get(monthKey) ?? {
+              monthKey,
+              totalSpend: 0,
+              fixedSpend: 0,
+              variableSpend: 0,
+              hobbySpend: 0,
+              trainingSpend: 0,
+              checkFlightSpend: 0,
+              hoursFlown: 0,
+              costPerHour: 0,
+              flightCount: 0,
+              expenseCount: 0,
+            },
+        );
+  const visibleSummaries = orderedSummaries.slice(-visibleCount);
+  const max = orderedSummaries.reduce((largest, summary) => Math.max(largest, summary.totalSpend), 0);
 
-  if (summaries.length === 0) {
+  if (orderedSummaries.length === 0) {
     return (
       <section className="card">
         <h2>Monthly trend</h2>
@@ -44,16 +65,18 @@ export const MonthTrend = ({ summaries }: MonthTrendProps) => {
           );
         })}
       </div>
-      {visibleCount < summaries.length ? (
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => {
-            setVisibleCount((current) => current + 12);
-          }}
-        >
-          View more
-        </button>
+      {visibleCount < orderedSummaries.length ? (
+        <div className="trend-actions">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              setVisibleCount((current) => current + 12);
+            }}
+          >
+            View more
+          </button>
+        </div>
       ) : null}
     </section>
   );

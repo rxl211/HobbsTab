@@ -87,7 +87,7 @@ export const DashboardPage = () => {
         </div>
       </section>
 
-      <MonthTrend summaries={monthlySummaries.slice(0, 6).reverse()} />
+      <MonthTrend summaries={monthlySummaries} />
 
       <HistoryList
         rows={historyRows.slice(0, 8)}
