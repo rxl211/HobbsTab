@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { ErrorState } from "../components/common/error-state";
 import { AppShell } from "../components/layout/app-shell";
 import { AddEntryPage } from "../pages/AddEntryPage";
+import { BudgetPage } from "../pages/BudgetPage";
 import { ClubsPage } from "../pages/ClubsPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { EditClubPage } from "../pages/EditClubPage";
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "add", element: <AddEntryPage /> },
+      { path: "budget", element: <BudgetPage /> },
       { path: "history", element: <HistoryPage /> },
       { path: "clubs", element: <ClubsPage /> },
       { path: "clubs/:clubId/edit", element: <EditClubPage /> },

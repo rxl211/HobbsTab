@@ -4,6 +4,7 @@ import { AppDataProvider, useAppData } from "../../app/providers";
 
 const navigation = [
   { to: "/", label: "Dashboard", end: true },
+  { to: "/budget", label: "Budget" },
   { to: "/add", label: "Add Entry" },
   { to: "/history", label: "History" },
   { to: "/clubs", label: "Clubs" },
