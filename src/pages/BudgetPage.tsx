@@ -109,7 +109,7 @@ export const BudgetPage = () => {
           </p>
         </div>
         <div className="viz-hero-value">
-          <span className="viz-kicker">Saved budget</span>
+          <span className="viz-kicker">Budget target</span>
           <strong>{budgetAvailable ? formatCurrency(annualBudget) : "Not set"}</strong>
           <button
             type="button"
@@ -166,7 +166,22 @@ export const BudgetPage = () => {
 
           <div className="budget-hero-secondary">
             <div>
-              <div className="viz-kicker">Planned CFI</div>
+              <div className="field-label-with-help">
+                <span className="viz-kicker">CFI budget</span>
+                <span className="info-tooltip">
+                  <button
+                    type="button"
+                    className="info-pill"
+                    aria-label="More information about CFI budget"
+                  >
+                    i
+                  </button>
+                  <span className="info-tooltip-bubble" role="tooltip">
+                    The amount of your budget target that will be allocated to paying CFI for
+                    training.
+                  </span>
+                </span>
+              </div>
               <strong>{formatCurrency(projection.plannedInstructionBudget)}</strong>
               <p className="subtle">
                 {projection.instructionBudgetSource === "override"
