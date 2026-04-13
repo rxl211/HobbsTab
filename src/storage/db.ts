@@ -7,6 +7,7 @@ import type {
   PlaneRatePeriod,
 } from "../domain/clubs/club-types";
 import type { EntryRecord } from "../domain/entries/entry-types";
+import type { BudgetSetting } from "../domain/settings/settings-types";
 import type { LegacyClubRatePeriod, LegacyEntryRecord } from "./migrations";
 import { migrateLegacyModel } from "./migrations";
 
@@ -16,6 +17,7 @@ export class HobbsTabDatabase extends Dexie {
   clubDuesPeriods!: EntityTable<ClubDuesPeriod, "id">;
   planeRatePeriods!: EntityTable<PlaneRatePeriod, "id">;
   entries!: EntityTable<EntryRecord, "id">;
+  settings!: EntityTable<BudgetSetting, "key">;
 
   constructor() {
     super("hobbstab");
@@ -47,6 +49,15 @@ export class HobbsTabDatabase extends Dexie {
         await tx.table("entries").clear();
         await tx.table("entries").bulkPut(migrated.entries);
       });
+
+    this.version(3).stores({
+      clubs: "&id, name, active",
+      planes: "&id, clubId, name, active",
+      clubDuesPeriods: "&id, clubId, effectiveFrom",
+      planeRatePeriods: "&id, planeId, effectiveFrom",
+      entries: "&id, kind, date, clubId, planeId",
+      settings: "&key",
+    });
   }
 }
 
