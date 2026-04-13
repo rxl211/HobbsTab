@@ -15,6 +15,16 @@ import { formatCurrency } from "../lib/formatters";
 
 type ClubTab = "dues" | "planes";
 
+const confirmClubDelete = (clubName: string) =>
+  window.confirm(
+    `Delete "${clubName}"? This will also remove its planes/rates, dues history, and linked entries.`,
+  );
+
+const confirmPlaneDelete = (planeName: string) =>
+  window.confirm(
+    `Delete "${planeName}"? This will also remove its hourly rate history and linked entries.`,
+  );
+
 const PlaneCard = ({ clubId, plane }: { clubId: string; plane: Plane }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isRatesTableVisible, setIsRatesTableVisible] = useState(false);
@@ -53,6 +63,10 @@ const PlaneCard = ({ clubId, plane }: { clubId: string; plane: Plane }) => {
             type="button"
             className="link-button danger"
             onClick={() => {
+              if (!confirmPlaneDelete(plane.name)) {
+                return;
+              }
+
               void removePlane(plane.id);
             }}
           >
@@ -177,6 +191,10 @@ const ClubCard = ({ club }: { club: Club }) => {
             type="button"
             className="link-button danger"
             onClick={() => {
+              if (!confirmClubDelete(club.name)) {
+                return;
+              }
+
               void removeClub(club.id);
             }}
           >
