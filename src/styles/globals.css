@@ -257,6 +257,10 @@ button {
   max-width: 200px;
 }
 
+.limited-field-row {
+  max-width: 350px;
+}
+
 label {
   display: grid;
   gap: 8px;

@@ -3,14 +3,18 @@ import { useState } from "react";
 import type { Plane } from "../../domain/clubs/club-types";
 
 interface PlaneFormProps {
+  activeLabel?: string;
   clubId: string;
+  fieldLabel?: string;
   initialValue?: Plane;
   onSubmit: (plane: Omit<Plane, "id"> | Plane) => Promise<void>;
   submitLabel?: string;
 }
 
 export const PlaneForm = ({
+  activeLabel = "Active plane",
   clubId,
+  fieldLabel = "Plane name",
   initialValue,
   onSubmit,
   submitLabel = "Save plane",
@@ -43,7 +47,7 @@ export const PlaneForm = ({
       <div className="field-grid">
         <label>
           <span className="field-label-with-help">
-            Plane name
+            {fieldLabel}
             <span className="info-tooltip">
               <button
                 type="button"
@@ -61,12 +65,12 @@ export const PlaneForm = ({
           <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
         </label>
         <label className="checkbox-field">
-          <input
-            type="checkbox"
-            checked={active}
-            onChange={(event) => setActive(event.target.checked)}
-          />
-          Active plane
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(event) => setActive(event.target.checked)}
+            />
+          {activeLabel}
         </label>
       </div>
       <button type="submit" className="primary-button" disabled={saving}>

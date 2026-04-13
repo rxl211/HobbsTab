@@ -35,9 +35,11 @@ import {
   listClubs,
   listPlaneRatePeriods,
   listPlanes,
+  saveCompleteClub,
   saveClub,
   saveClubDuesPeriod,
   savePlane,
+  savePlaneWithRate,
   savePlaneRatePeriod,
 } from "../storage/clubs-repo";
 import { exportBackup, importBackup, type HobbsTabBackup } from "../storage/backup-repo";
@@ -56,9 +58,19 @@ interface AppDataState {
   error?: string;
   refresh: () => Promise<void>;
   createClub: (club: Omit<Club, "id">) => Promise<void>;
+  createCompleteClub: (input: {
+    club: Omit<Club, "id">;
+    duesPeriod: Omit<ClubDuesPeriod, "id" | "clubId">;
+    plane: Omit<Plane, "id" | "clubId">;
+    planeRatePeriod: Omit<PlaneRatePeriod, "id" | "planeId">;
+  }) => Promise<void>;
   updateClub: (club: Club) => Promise<void>;
   removeClub: (clubId: string) => Promise<void>;
   createPlane: (plane: Omit<Plane, "id">) => Promise<void>;
+  createPlaneWithRate: (input: {
+    plane: Omit<Plane, "id" | "clubId"> & { clubId: string };
+    planeRatePeriod: Omit<PlaneRatePeriod, "id" | "planeId">;
+  }) => Promise<void>;
   updatePlane: (plane: Plane) => Promise<void>;
   removePlane: (planeId: string) => Promise<void>;
   createClubDuesPeriod: (period: Omit<ClubDuesPeriod, "id">) => Promise<void>;
@@ -177,6 +189,33 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
           id: createId(),
         }),
       ),
+    createCompleteClub: async (input) =>
+      persistAndRefresh(() => {
+        const clubId = createId();
+        const planeId = createId();
+
+        return saveCompleteClub({
+          club: {
+            ...input.club,
+            id: clubId,
+          },
+          duesPeriod: {
+            ...input.duesPeriod,
+            clubId,
+            id: createId(),
+          },
+          plane: {
+            ...input.plane,
+            clubId,
+            id: planeId,
+          },
+          planeRatePeriod: {
+            ...input.planeRatePeriod,
+            planeId,
+            id: createId(),
+          },
+        });
+      }),
     updateClub: async (club) => persistAndRefresh(() => saveClub(club)),
     removeClub: async (clubId) => persistAndRefresh(() => deleteClub(clubId)),
     createPlane: async (plane) =>
@@ -186,6 +225,22 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
           id: createId(),
         }),
       ),
+    createPlaneWithRate: async (input) =>
+      persistAndRefresh(() => {
+        const planeId = createId();
+
+        return savePlaneWithRate({
+          plane: {
+            ...input.plane,
+            id: planeId,
+          },
+          planeRatePeriod: {
+            ...input.planeRatePeriod,
+            planeId,
+            id: createId(),
+          },
+        });
+      }),
     updatePlane: async (plane) => persistAndRefresh(() => savePlane(plane)),
     removePlane: async (planeId) => persistAndRefresh(() => deletePlane(planeId)),
     createClubDuesPeriod: async (period) =>
