@@ -334,6 +334,7 @@ button {
 .viz-grid {
   display: grid;
   gap: 20px;
+  align-items: start;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 

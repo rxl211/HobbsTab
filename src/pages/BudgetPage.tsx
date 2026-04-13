@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useAppData } from "../app/providers";
 import { buildBudgetProjection } from "../domain/summaries/budget-view";
@@ -57,8 +58,11 @@ export const BudgetPage = () => {
   }
 
   const annualBudget = projection.annualBudget ?? 0;
+  const plannedFlyingBudget = Math.max(annualBudget - projection.fixedCosts, 0);
   const fixedPercent = annualBudget > 0 ? (projection.fixedCosts / annualBudget) * 100 : 0;
-  const flyingPercent = annualBudget > 0 ? (projection.flyingBudget / annualBudget) * 100 : 0;
+  const flyingPercent = annualBudget > 0 ? (plannedFlyingBudget / annualBudget) * 100 : 0;
+  const flyingSpendPercent =
+    plannedFlyingBudget > 0 ? (projection.flightSpendThisYear / plannedFlyingBudget) * 100 : 0;
   const completionPercent = projection.projectedFlightsCompletionPercent ?? 0;
   const budgetAvailable = projection.annualBudget !== undefined;
 
@@ -98,8 +102,8 @@ export const BudgetPage = () => {
 
                 const nextBudget = budgetInputToNumber(budgetInput);
 
-                if (nextBudget === undefined || nextBudget < 0) {
-                  setError("Enter a valid non-negative annual budget.");
+                if (nextBudget === undefined || nextBudget < 1) {
+                  setError("Enter a valid annual budget of at least 1.");
                   return;
                 }
 
@@ -112,7 +116,7 @@ export const BudgetPage = () => {
                 Annual budget
                 <input
                   type="number"
-                  min="0"
+                  min="1"
                   step="0.01"
                   value={budgetInput}
                   onChange={(event) => {
@@ -134,6 +138,8 @@ export const BudgetPage = () => {
         </div>
       </section>
 
+      {!budgetAvailable ? null : (
+        <>
       <section className="viz-grid">
         <article className="card viz-budget-card">
           <div className="section-heading">
@@ -143,6 +149,7 @@ export const BudgetPage = () => {
             </div>
           </div>
           {budgetAvailable ? (
+            <>
             <div className="viz-budget-layout">
               <div
                 className="viz-budget-donut"
@@ -170,12 +177,52 @@ export const BudgetPage = () => {
                   <span className="viz-dot teal" />
                   <div>
                     <p className="viz-kicker">Left for flying</p>
-                    <strong>{formatCurrency(projection.flyingBudget)}</strong>
-                    <p className="subtle">{formatNumber(flyingPercent)}% available to fly</p>
+                    <strong>{formatCurrency(plannedFlyingBudget)}</strong>
+                    <p className="subtle">
+                      {formatNumber(flyingPercent)}% of annual budget after fixed dues
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
+            
+            <div className="final-budget-progress-card" style={{ marginTop: "1.5rem" }}>
+              <div className="section-heading">
+                <div>
+                  <h3>Flying budget progress</h3>
+                  <p className="subtle">How much of your left-for-flying budget has already been used.</p>
+                </div>
+              </div>
+
+              <div className="final-budget-progress-grid">
+                <div className="final-budget-progress-metric">
+                  <span className="viz-kicker">Left for flying</span>
+                  <strong>{formatCurrency(plannedFlyingBudget)}</strong>
+                </div>
+                <div className="final-budget-progress-metric">
+                  <span className="viz-kicker">Spent on flights YTD</span>
+                  <strong>{formatCurrency(projection.flightSpendThisYear)}</strong>
+                </div>
+                <div className="final-budget-progress-metric">
+                  <span className="viz-kicker">Still available</span>
+                  <strong>{formatCurrency(projection.flyingBudget)}</strong>
+                </div>
+              </div>
+
+              <div className="final-budget-progress-track">
+                <div
+                  className="final-budget-progress-fill"
+                  style={{ width: `${clampPercent(flyingSpendPercent)}%` }}
+                />
+              </div>
+
+              <p className="subtle">
+                {plannedFlyingBudget > 0
+                  ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}.`
+                  : "No flyable budget remains after fixed dues yet."}
+              </p>
+            </div>
+            </>
           ) : (
             <p className="subtle">Set your annual budget above to unlock the visual planning view.</p>
           )}
@@ -211,11 +258,19 @@ export const BudgetPage = () => {
                 ? formatNumber(projection.projectedFlights)
                 : "Unavailable"}
             </strong>
-            <p className="subtle">
-              {projection.projectedActualHours !== undefined
-                ? `${formatHours(projection.projectedActualHours)} projected flight hours.`
-                : projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
-            </p>
+            {projection.projectedActualHours !== undefined ? (
+              <p className="subtle">
+                {formatHours(projection.projectedActualHours)} projected flight hours.
+              </p>
+            ) : projection.projectedFlightsUnavailableReason === "No active plane/rate is available yet." ? (
+              <p className="subtle">
+                No active plane/rate is available yet. <Link to="/clubs">Create Club</Link>
+              </p>
+            ) : (
+              <p className="subtle">
+                {projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
+              </p>
+            )}
           </div>
 
           <details className="final-budget-details">
@@ -224,8 +279,14 @@ export const BudgetPage = () => {
               {projection.projectedFlights !== undefined ? (
                 <>
                   <p className="subtle">
-                    Started with {formatCurrency(projection.flyingBudget)} left for flying and the
-                    cheapest current rate of{" "}
+                    Started with an annual budget of {formatCurrency(projection.annualBudget ?? 0)},
+                    then subtracted {formatCurrency(projection.fixedCosts)} in fixed dues and{" "}
+                    {formatCurrency(projection.flightSpendThisYear)} already spent on flights this
+                    year.
+                  </p>
+                  <p className="subtle">
+                    That leaves {formatCurrency(projection.flyingBudget)} available for future
+                    flying at the cheapest current rate of{" "}
                     {formatCurrency(projection.cheapestPlane?.hourlyRate ?? 0)}/
                     {projection.cheapestPlane?.billingTimeType} hr.
                   </p>
@@ -246,9 +307,11 @@ export const BudgetPage = () => {
                   </p>
                   <p className="subtle">
                     Then divided by your median flight duration of{" "}
-                    {formatHours(projection.typicalFlightHours ?? 0)} from{" "}
-                    {formatNumber(projection.flightDurationSampleCount)} logged flights to reach{" "}
-                    {formatNumber(projection.projectedFlights)} projected flights.
+                    {formatHours(projection.typicalFlightHours ?? 0)}
+                    {projection.isDefaultTypicalFlightHours
+                      ? " (a placeholder because there are no previously recorded flights)."
+                      : ` from ${formatNumber(projection.flightDurationSampleCount)} logged flights.`}{" "}
+                    That reaches {formatNumber(projection.projectedFlights)} projected flights.
                   </p>
                 </>
               ) : (
@@ -316,6 +379,8 @@ export const BudgetPage = () => {
             : projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
         </p>
       </section>
+        </>
+      )}
     </div>
   );
 };

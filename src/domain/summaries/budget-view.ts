@@ -1,5 +1,6 @@
 import type { Club, ClubDuesPeriod, Plane, PlaneRatePeriod } from "../clubs/club-types";
 import { sortDuesPeriods } from "../clubs/club-rules";
+import { entryTotal } from "../entries/entry-rules";
 import type { EntryRecord, FlightEntry } from "../entries/entry-types";
 import { monthKeysBetween } from "../shared/dates";
 
@@ -8,6 +9,8 @@ const roundCurrency = (value: number) => Number(value.toFixed(2));
 const roundHours = (value: number) => Number(value.toFixed(2));
 
 const floorCount = (value: number) => Math.floor(value);
+
+const DEFAULT_TYPICAL_FLIGHT_HOURS = 1.3;
 
 const median = (values: number[]) => {
   if (values.length === 0) {
@@ -90,6 +93,7 @@ export interface BudgetPlaneOption {
 export interface BudgetProjection {
   annualBudget?: number;
   fixedCosts: number;
+  flightSpendThisYear: number;
   flyingBudget: number;
   cheapestPlane?: BudgetPlaneOption;
   projectedBillableHours?: number;
@@ -97,6 +101,7 @@ export interface BudgetProjection {
   tachToHobbsRatio?: number;
   projectedFlights?: number;
   typicalFlightHours?: number;
+  isDefaultTypicalFlightHours: boolean;
   flightsCompletedThisYear: number;
   flightsRemainingThisYear?: number;
   tachFlightSampleCount: number;
@@ -124,7 +129,14 @@ export const buildBudgetProjection = ({
 }): BudgetProjection => {
   const fixedCosts = buildFixedCostTotal(clubs, duesPeriods, now);
   const annualBudgetValue = annualBudget === undefined ? undefined : roundCurrency(annualBudget);
-  const rawFlyingBudget = annualBudgetValue === undefined ? 0 : annualBudgetValue - fixedCosts;
+  const yearPrefix = `${now.getFullYear()}-`;
+  const flightSpendThisYear = roundCurrency(
+    entries
+      .filter((entry): entry is FlightEntry => isFlightEntry(entry) && entry.date.startsWith(yearPrefix))
+      .reduce((total, entry) => total + entryTotal(entry), 0),
+  );
+  const rawFlyingBudget =
+    annualBudgetValue === undefined ? 0 : annualBudgetValue - fixedCosts - flightSpendThisYear;
   const flyingBudget = roundCurrency(Math.max(rawFlyingBudget, 0));
   const today = now.toISOString().slice(0, 10);
   const clubsById = new Map(clubs.map((club) => [club.id, club]));
@@ -185,13 +197,16 @@ export const buildBudgetProjection = ({
     .filter(isFlightEntry)
     .map((entry) => entry.flightTime)
     .filter((value) => value > 0);
-  const typicalFlightHours = median(flightDurations);
+  const medianFlightHours = median(flightDurations);
+  const isDefaultTypicalFlightHours = medianFlightHours === undefined;
+  const typicalFlightHours = isDefaultTypicalFlightHours
+    ? DEFAULT_TYPICAL_FLIGHT_HOURS
+    : medianFlightHours;
   const projectedFlights =
     projectedActualHours !== undefined && typicalFlightHours !== undefined
       ? floorCount(projectedActualHours / typicalFlightHours)
       : undefined;
 
-  const yearPrefix = `${now.getFullYear()}-`;
   const flightsCompletedThisYear = entries.filter(
     (entry) => isFlightEntry(entry) && entry.date.startsWith(yearPrefix),
   ).length;
@@ -216,21 +231,20 @@ export const buildBudgetProjection = ({
           ? cheapestPlane.billingTimeType === "tach"
             ? "Not enough prior tach-billed flights to convert billable time into actual flight hours."
             : "Projected actual hours are unavailable."
-          : typicalFlightHours === undefined
-            ? "Not enough logged flights to determine a typical flight duration."
-            : undefined;
+          : undefined;
 
   return {
     annualBudget: annualBudgetValue,
     fixedCosts,
+    flightSpendThisYear,
     flyingBudget,
     cheapestPlane,
     projectedBillableHours,
     projectedActualHours,
     tachToHobbsRatio: tachToHobbsRatio === undefined ? undefined : roundHours(tachToHobbsRatio),
     projectedFlights,
-    typicalFlightHours:
-      typicalFlightHours === undefined ? undefined : roundHours(typicalFlightHours),
+    typicalFlightHours: roundHours(typicalFlightHours),
+    isDefaultTypicalFlightHours,
     flightsCompletedThisYear,
     flightsRemainingThisYear,
     tachFlightSampleCount: tachFlights.length,

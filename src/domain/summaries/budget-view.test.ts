@@ -101,18 +101,20 @@ describe("budget view", () => {
     });
 
     expect(projection.fixedCosts).toBe(1700);
-    expect(projection.flyingBudget).toBe(3300);
+    expect(projection.flightSpendThisYear).toBe(866);
+    expect(projection.flyingBudget).toBe(2434);
     expect(projection.cheapestPlane?.planeId).toBe("plane-2");
     expect(projection.cheapestPlane?.hourlyRate).toBe(150);
-    expect(projection.projectedBillableHours).toBe(22);
-    expect(projection.projectedActualHours).toBe(22);
+    expect(projection.projectedBillableHours).toBe(16.23);
+    expect(projection.projectedActualHours).toBe(16.23);
     expect(projection.typicalFlightHours).toBe(1.8);
-    expect(projection.projectedFlights).toBe(12);
+    expect(projection.projectedFlights).toBe(9);
     expect(projection.flightsCompletedThisYear).toBe(3);
-    expect(projection.flightsRemainingThisYear).toBe(9);
+    expect(projection.flightsRemainingThisYear).toBe(6);
+    expect(projection.isDefaultTypicalFlightHours).toBe(false);
     expect(projection.tachFlightSampleCount).toBe(2);
     expect(projection.flightDurationSampleCount).toBe(3);
-    expect(projection.projectedFlightsCompletionPercent).toBe(25);
+    expect(projection.projectedFlightsCompletionPercent).toBe(33.33);
   });
 
   it("uses median tach conversion for tach-billed projections and floors negative flying budget", () => {
@@ -127,6 +129,7 @@ describe("budget view", () => {
     });
 
     expect(projection.flyingBudget).toBe(0);
+    expect(projection.flightSpendThisYear).toBe(866);
     expect(projection.projectedBillableHours).toBe(0);
     expect(projection.tachToHobbsRatio).toBe(1.2);
     expect(projection.projectedActualHours).toBe(0);
@@ -148,10 +151,30 @@ describe("budget view", () => {
     expect(projection.projectedActualHours).toBeUndefined();
     expect(projection.projectedFlights).toBeUndefined();
     expect(projection.flightsRemainingThisYear).toBeUndefined();
+    expect(projection.isDefaultTypicalFlightHours).toBe(true);
     expect(projection.tachFlightSampleCount).toBe(0);
     expect(projection.flightDurationSampleCount).toBe(0);
     expect(projection.projectedFlightsUnavailableReason).toBe(
       "Not enough prior tach-billed flights to convert billable time into actual flight hours.",
     );
+  });
+
+  it("uses a default 1.3 hour flight duration when there are no logged flights", () => {
+    const projection = buildBudgetProjection({
+      annualBudget: 5000,
+      clubs,
+      duesPeriods,
+      planes: [{ id: "plane-2", clubId: "club-2", name: "Cherokee", active: true }],
+      planeRatePeriods: [planeRatePeriods[2]],
+      entries: [],
+      now: new Date("2026-04-13T12:00:00"),
+    });
+
+    expect(projection.projectedActualHours).toBe(22);
+    expect(projection.typicalFlightHours).toBe(1.3);
+    expect(projection.isDefaultTypicalFlightHours).toBe(true);
+    expect(projection.flightSpendThisYear).toBe(0);
+    expect(projection.projectedFlights).toBe(16);
+    expect(projection.flightsRemainingThisYear).toBe(16);
   });
 });
