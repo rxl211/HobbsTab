@@ -9,7 +9,8 @@ export const EditEntryPage = () => {
   const { entryId = "" } = useParams();
   const {
     clubs,
-    clubRatePeriods,
+    planes,
+    planeRatePeriods,
     entries,
     updateExpenseEntry,
     updateFlightEntry,
@@ -31,7 +32,8 @@ export const EditEntryPage = () => {
         {entry.kind === "flight" ? (
           <FlightEntryForm
             clubs={clubs}
-            ratePeriods={clubRatePeriods}
+            planes={planes}
+            planeRatePeriods={planeRatePeriods}
             initialValue={entry}
             submitLabel="Update flight"
             onSubmit={async (input) => {

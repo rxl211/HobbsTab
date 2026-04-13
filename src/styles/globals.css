@@ -175,7 +175,7 @@ button {
 }
 
 .trend-actions {
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
 .trend-labels {
@@ -240,12 +240,21 @@ button {
   border: 0;
   background: transparent;
   padding: 0;
+  color: #334155;
+}
+
+.link-button.danger {
+  color: #991b1b;
 }
 
 .field-grid {
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.single-field-row {
+  max-width: 200px;
 }
 
 label {
@@ -513,6 +522,39 @@ textarea {
 
 .club-chart-section {
   margin-top: 12px;
+}
+
+.nested-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(20, 33, 61, 0.04);
+  border: 1px solid rgba(20, 33, 61, 0.08);
+}
+
+.club-tabbar {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 8px;
+  border-radius: 18px;
+  background: rgba(20, 33, 61, 0.06);
+}
+
+.club-tab {
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: transparent;
+  color: #475569;
+  font-weight: 600;
+}
+
+.club-tab.active {
+  background: #fffdf7;
+  color: #14213d;
+  box-shadow: 0 6px 18px rgba(20, 33, 61, 0.08);
 }
 
 .line-chart-tooltip-object {

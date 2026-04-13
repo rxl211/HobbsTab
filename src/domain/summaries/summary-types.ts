@@ -8,7 +8,7 @@ export interface SyntheticDueRow {
   monthKey: string;
   date: string;
   monthlyDues: number;
-  ratePeriodId: string;
+  duesPeriodId: string;
 }
 
 export type HistoryRow = EntryRecord | SyntheticDueRow;

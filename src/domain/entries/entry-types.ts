@@ -7,9 +7,10 @@ export interface FlightEntry {
   kind: "flight";
   date: string;
   clubId: string | null;
+  planeId: string | null;
   purpose: FlightPurpose;
-  hobbsTime: number;
-  tachTime?: number;
+  flightTime: number;
+  billedTime: number;
   billingTimeTypeUsed: BillingTimeType;
   hourlyRateUsed: number;
   aircraftCost: number;
@@ -31,9 +32,10 @@ export type EntryRecord = FlightEntry | ExpenseEntry;
 export interface FlightEntryInput {
   date: string;
   clubId: string | null;
+  planeId: string | null;
   purpose: FlightPurpose;
-  hobbsTime: number;
-  tachTime?: number;
+  flightTime: number;
+  billedTime: number;
   nonClubHourlyRate?: number;
   instructorCost?: number;
   notes?: string;

@@ -10,8 +10,10 @@ const entries: EntryRecord[] = [
     kind: "flight",
     date: "2025-04-03",
     clubId: "club-1",
+    planeId: "plane-1",
     purpose: "hobby",
-    hobbsTime: 1.2,
+    flightTime: 1.2,
+    billedTime: 1.2,
     billingTimeTypeUsed: "hobbs",
     hourlyRateUsed: 155,
     aircraftCost: 186,
@@ -21,8 +23,10 @@ const entries: EntryRecord[] = [
     kind: "flight",
     date: "2025-04-16",
     clubId: "club-1",
+    planeId: "plane-1",
     purpose: "hobby",
-    hobbsTime: 2.4,
+    flightTime: 2.4,
+    billedTime: 2.4,
     billingTimeTypeUsed: "hobbs",
     hourlyRateUsed: 155,
     aircraftCost: 372,
@@ -32,8 +36,10 @@ const entries: EntryRecord[] = [
     kind: "flight",
     date: "2026-04-04",
     clubId: "club-1",
+    planeId: "plane-1",
     purpose: "training",
-    hobbsTime: 1.4,
+    flightTime: 1.4,
+    billedTime: 1.4,
     billingTimeTypeUsed: "hobbs",
     hourlyRateUsed: 160,
     aircraftCost: 224,
@@ -49,7 +55,7 @@ const syntheticDues: SyntheticDueRow[] = [
     monthKey: "2025-04",
     date: "2025-04-01",
     monthlyDues: 115,
-    ratePeriodId: "rate-1",
+    duesPeriodId: "dues-1",
   },
   {
     id: "due-apr-2026",
@@ -59,7 +65,7 @@ const syntheticDues: SyntheticDueRow[] = [
     monthKey: "2026-04",
     date: "2026-04-01",
     monthlyDues: 115,
-    ratePeriodId: "rate-2",
+    duesPeriodId: "dues-2",
   },
 ];
 
@@ -75,8 +81,9 @@ describe("summary view", () => {
     const totals = buildScopedSummaryTotals(entries, syntheticDues, "oneYear");
 
     expect(totals.hoursFlown).toBe(3.8);
-    expect(totals.variableSpend).toBe(596);
-    expect(totals.fixedSpend).toBe(115);
+    expect(totals.flightSpend).toBe(596);
+    expect(totals.otherExpenseSpend).toBe(0);
+    expect(totals.duesSpend).toBe(115);
     expect(totals.totalSpend).toBe(711);
     expect(totals.flightCount).toBe(2);
   });

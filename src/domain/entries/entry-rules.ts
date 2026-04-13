@@ -1,5 +1,5 @@
-import type { ClubRatePeriod } from "../clubs/club-types";
-import { getApplicableClubRate } from "../clubs/club-rules";
+import type { PlaneRatePeriod } from "../clubs/club-types";
+import { getApplicablePlaneRate } from "../clubs/club-rules";
 import type {
   ExpenseEntry,
   ExpenseEntryInput,
@@ -10,20 +10,17 @@ import type {
 export const buildFlightEntry = (
   id: string,
   input: FlightEntryInput,
-  ratePeriods: ClubRatePeriod[],
+  ratePeriods: PlaneRatePeriod[],
 ): FlightEntry => {
   if (input.clubId) {
-    const ratePeriod = getApplicableClubRate(ratePeriods, input.clubId, input.date);
-
-    if (!ratePeriod) {
-      throw new Error("No club rate period covers that flight date.");
+    if (!input.planeId) {
+      throw new Error("Plane is required for club-billed flights.");
     }
 
-    const billedHours =
-      ratePeriod.billingTimeType === "tach" ? input.tachTime ?? 0 : input.hobbsTime;
+    const ratePeriod = getApplicablePlaneRate(ratePeriods, input.planeId, input.date);
 
-    if (ratePeriod.billingTimeType === "tach" && !input.tachTime) {
-      throw new Error("Tach time is required for tach-billed club flights.");
+    if (!ratePeriod) {
+      throw new Error("No plane rate period covers that flight date.");
     }
 
     return {
@@ -31,12 +28,13 @@ export const buildFlightEntry = (
       kind: "flight",
       date: input.date,
       clubId: input.clubId,
+      planeId: input.planeId,
       purpose: input.purpose,
-      hobbsTime: input.hobbsTime,
-      tachTime: input.tachTime,
+      flightTime: input.flightTime,
+      billedTime: input.billedTime,
       billingTimeTypeUsed: ratePeriod.billingTimeType,
       hourlyRateUsed: ratePeriod.hourlyRate,
-      aircraftCost: Number((billedHours * ratePeriod.hourlyRate).toFixed(2)),
+      aircraftCost: Number((input.billedTime * ratePeriod.hourlyRate).toFixed(2)),
       instructorCost: input.instructorCost,
       notes: input.notes?.trim() || undefined,
     };
@@ -51,11 +49,13 @@ export const buildFlightEntry = (
     kind: "flight",
     date: input.date,
     clubId: null,
+    planeId: null,
     purpose: input.purpose,
-    hobbsTime: input.hobbsTime,
+    flightTime: input.flightTime,
+    billedTime: input.billedTime,
     billingTimeTypeUsed: "hobbs",
     hourlyRateUsed: input.nonClubHourlyRate,
-    aircraftCost: Number((input.hobbsTime * input.nonClubHourlyRate).toFixed(2)),
+    aircraftCost: Number((input.billedTime * input.nonClubHourlyRate).toFixed(2)),
     instructorCost: input.instructorCost,
     notes: input.notes?.trim() || undefined,
   };

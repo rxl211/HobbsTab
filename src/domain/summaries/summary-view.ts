@@ -1,4 +1,9 @@
-import type { Club, ClubRatePeriod } from "../clubs/club-types";
+import type {
+  Club,
+  ClubDuesPeriod,
+  Plane,
+  PlaneRatePeriod,
+} from "../clubs/club-types";
 import { entryTotal } from "../entries/entry-rules";
 import type { EntryRecord } from "../entries/entry-types";
 import { isFlightEntry, type SyntheticDueRow } from "./summary-types";
@@ -16,8 +21,9 @@ export const summaryScopeLabels: Record<SummaryScope, string> = {
 
 export interface SummaryViewTotals {
   totalSpend: number;
-  fixedSpend: number;
-  variableSpend: number;
+  duesSpend: number;
+  flightSpend: number;
+  otherExpenseSpend: number;
   hobbySpend: number;
   trainingSpend: number;
   hoursFlown: number;
@@ -95,8 +101,9 @@ export const buildScopedSummaryTotals = (
 
   const totals = {
     totalSpend: 0,
-    fixedSpend: 0,
-    variableSpend: 0,
+    duesSpend: 0,
+    flightSpend: 0,
+    otherExpenseSpend: 0,
     hobbySpend: 0,
     trainingSpend: 0,
     hoursFlown: 0,
@@ -106,14 +113,15 @@ export const buildScopedSummaryTotals = (
   includedEntries.forEach((entry) => {
     const total = entryTotal(entry);
     totals.totalSpend += total;
-    totals.variableSpend += total;
 
     if (!isFlightEntry(entry)) {
+      totals.otherExpenseSpend += total;
       return;
     }
 
     totals.flightCount += 1;
-    totals.hoursFlown += entry.hobbsTime;
+    totals.hoursFlown += entry.flightTime;
+    totals.flightSpend += total;
 
     if (entry.purpose === "hobby") {
       totals.hobbySpend += total;
@@ -125,14 +133,15 @@ export const buildScopedSummaryTotals = (
 
   includedDues.forEach((due) => {
     totals.totalSpend += due.monthlyDues;
-    totals.fixedSpend += due.monthlyDues;
+    totals.duesSpend += due.monthlyDues;
   });
 
   return {
     ...totals,
     totalSpend: Number(totals.totalSpend.toFixed(2)),
-    fixedSpend: Number(totals.fixedSpend.toFixed(2)),
-    variableSpend: Number(totals.variableSpend.toFixed(2)),
+    duesSpend: Number(totals.duesSpend.toFixed(2)),
+    flightSpend: Number(totals.flightSpend.toFixed(2)),
+    otherExpenseSpend: Number(totals.otherExpenseSpend.toFixed(2)),
     hobbySpend: Number(totals.hobbySpend.toFixed(2)),
     trainingSpend: Number(totals.trainingSpend.toFixed(2)),
     hoursFlown: Number(totals.hoursFlown.toFixed(2)),
@@ -146,8 +155,11 @@ export const buildSummaryTotals = (
   scopedMonthly.reduce(
     (accumulator, summary) => ({
       totalSpend: accumulator.totalSpend + summary.totalSpend,
-      fixedSpend: accumulator.fixedSpend + summary.fixedSpend,
-      variableSpend: accumulator.variableSpend + summary.variableSpend,
+      duesSpend: accumulator.duesSpend + summary.fixedSpend,
+      flightSpend: accumulator.flightSpend + summary.hobbySpend + summary.trainingSpend,
+      otherExpenseSpend:
+        accumulator.otherExpenseSpend +
+        (summary.variableSpend - summary.hobbySpend - summary.trainingSpend),
       hobbySpend: accumulator.hobbySpend + summary.hobbySpend,
       trainingSpend: accumulator.trainingSpend + summary.trainingSpend,
       hoursFlown: accumulator.hoursFlown + summary.hoursFlown,
@@ -155,8 +167,9 @@ export const buildSummaryTotals = (
     }),
     {
       totalSpend: 0,
-      fixedSpend: 0,
-      variableSpend: 0,
+      duesSpend: 0,
+      flightSpend: 0,
+      otherExpenseSpend: 0,
       hobbySpend: 0,
       trainingSpend: 0,
       hoursFlown: 0,
@@ -165,13 +178,13 @@ export const buildSummaryTotals = (
   );
 
 export const buildDuesTrend = (
-  clubRatePeriods: ClubRatePeriod[],
+  duesPeriods: ClubDuesPeriod[],
   clubs: Club[],
   formatCurrency: (value: number) => string,
 ): SummaryTrendPoint[] => {
   const clubsById = new Map(clubs.map((club) => [club.id, club.name]));
 
-  return [...clubRatePeriods]
+  return [...duesPeriods]
     .sort((left, right) => left.effectiveFrom.localeCompare(right.effectiveFrom))
     .map((period) => ({
       id: `dues:${period.id}`,
@@ -184,18 +197,18 @@ export const buildDuesTrend = (
 };
 
 export const buildRateTrend = (
-  clubRatePeriods: ClubRatePeriod[],
-  clubs: Club[],
+  ratePeriods: PlaneRatePeriod[],
+  planes: Plane[],
   formatCurrency: (value: number) => string,
 ): SummaryTrendPoint[] => {
-  const clubsById = new Map(clubs.map((club) => [club.id, club.name]));
+  const planesById = new Map(planes.map((plane) => [plane.id, plane.name]));
 
-  return [...clubRatePeriods]
+  return [...ratePeriods]
     .sort((left, right) => left.effectiveFrom.localeCompare(right.effectiveFrom))
     .map((period) => ({
       id: period.id,
       label: monthLabel(period.effectiveFrom.slice(0, 7)),
-      sublabel: `${clubsById.get(period.clubId) ?? "Club"} • ${period.billingTimeType} billed`,
+      sublabel: `${planesById.get(period.planeId) ?? "Plane"} • ${period.billingTimeType} billed`,
       valueLabel: `${formatCurrency(period.hourlyRate)}/hr`,
       value: period.hourlyRate,
     }))

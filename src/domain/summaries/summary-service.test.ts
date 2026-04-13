@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Club, ClubRatePeriod } from "../clubs/club-types";
+import type { Club, ClubDuesPeriod } from "../clubs/club-types";
 import type { EntryRecord } from "../entries/entry-types";
 import { buildMonthlySummaries, buildSyntheticDues } from "./summary-service";
 
@@ -10,21 +10,17 @@ const club: Club = {
   active: true,
 };
 
-const ratePeriods: ClubRatePeriod[] = [
+const duesPeriods: ClubDuesPeriod[] = [
   {
-    id: "rate-1",
+    id: "dues-1",
     clubId: club.id,
     effectiveFrom: "2026-01-01",
-    billingTimeType: "hobbs",
-    hourlyRate: 120,
     monthlyDues: 90,
   },
   {
-    id: "rate-2",
+    id: "dues-2",
     clubId: club.id,
     effectiveFrom: "2026-03-01",
-    billingTimeType: "hobbs",
-    hourlyRate: 130,
     monthlyDues: 110,
   },
 ];
@@ -35,8 +31,10 @@ const entries: EntryRecord[] = [
     kind: "flight",
     date: "2026-03-10",
     clubId: club.id,
+    planeId: "plane-1",
     purpose: "training",
-    hobbsTime: 1.5,
+    flightTime: 1.5,
+    billedTime: 1.5,
     billingTimeTypeUsed: "hobbs",
     hourlyRateUsed: 130,
     aircraftCost: 195,
@@ -53,14 +51,14 @@ const entries: EntryRecord[] = [
 
 describe("summary service", () => {
   it("uses the correct monthly dues after a retroactive rate change", () => {
-    const dues = buildSyntheticDues([club], ratePeriods, entries);
+    const dues = buildSyntheticDues([club], duesPeriods, entries);
 
     expect(dues.find((due) => due.monthKey === "2026-02")?.monthlyDues).toBe(90);
     expect(dues.find((due) => due.monthKey === "2026-03")?.monthlyDues).toBe(110);
   });
 
   it("calculates fixed, variable, and training totals together", () => {
-    const dues = buildSyntheticDues([club], ratePeriods, entries);
+    const dues = buildSyntheticDues([club], duesPeriods, entries);
     const monthly = buildMonthlySummaries(entries, dues);
     const march = monthly.find((summary) => summary.monthKey === "2026-03");
 
