@@ -49,18 +49,24 @@ describe("backup repo", () => {
     vi.clearAllMocks();
   });
 
-  it("includes the saved budget in backup export", async () => {
+  it("includes the saved budget settings in backup export", async () => {
     dbMock.clubs.toArray.mockResolvedValue([]);
     dbMock.planes.toArray.mockResolvedValue([]);
     dbMock.clubDuesPeriods.toArray.mockResolvedValue([]);
     dbMock.planeRatePeriods.toArray.mockResolvedValue([]);
     dbMock.entries.toArray.mockResolvedValue([]);
-    dbMock.settings.toArray.mockResolvedValue([{ key: "annualBudget", amount: 4200 }]);
+    dbMock.settings.toArray.mockResolvedValue([
+      { key: "annualBudget", amount: 4200 },
+      { key: "instructionBudgetOverride", amount: 600 },
+    ]);
 
     const backup = await exportBackup();
 
     expect(backup.version).toBe(3);
-    expect(backup.settings).toEqual([{ key: "annualBudget", amount: 4200 }]);
+    expect(backup.settings).toEqual([
+      { key: "annualBudget", amount: 4200 },
+      { key: "instructionBudgetOverride", amount: 600 },
+    ]);
   });
 
   it("restores saved budget settings during import", async () => {
@@ -72,12 +78,16 @@ describe("backup repo", () => {
       clubDuesPeriods: [],
       planeRatePeriods: [],
       entries: [],
-      settings: [{ key: "annualBudget", amount: 4200 }],
+      settings: [
+        { key: "annualBudget", amount: 4200 },
+        { key: "instructionBudgetOverride", amount: 600 },
+      ],
     });
 
     expect(dbMock.settings.clear).toHaveBeenCalled();
     expect(dbMock.settings.bulkPut).toHaveBeenCalledWith([
       { key: "annualBudget", amount: 4200 },
+      { key: "instructionBudgetOverride", amount: 600 },
     ]);
   });
 });

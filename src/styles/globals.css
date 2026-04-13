@@ -300,7 +300,7 @@ button {
 }
 
 .viz-hero-value {
-  min-width: 220px;
+  width: min(100%, 260px);
   padding: 18px 20px;
   border-radius: 20px;
   background: rgba(20, 33, 61, 0.06);
@@ -329,6 +329,19 @@ button {
   display: grid;
   gap: 8px;
   font-weight: 600;
+}
+
+.budget-hero-secondary {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(20, 33, 61, 0.08);
+}
+
+.budget-inline-actions,
+.budget-progress-stack {
+  display: grid;
+  gap: 12px;
 }
 
 .viz-grid {
@@ -415,6 +428,10 @@ button {
 
 .viz-dot.teal {
   background: #0f766e;
+}
+
+.viz-dot.blue {
+  background: #2563eb;
 }
 
 .viz-plane-callout {

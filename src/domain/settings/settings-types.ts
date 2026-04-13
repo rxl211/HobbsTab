@@ -1,4 +1,6 @@
+export type BudgetSettingKey = "annualBudget" | "instructionBudgetOverride";
+
 export interface BudgetSetting {
-  key: "annualBudget";
+  key: BudgetSettingKey;
   amount: number;
 }

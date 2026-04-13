@@ -45,7 +45,11 @@ import {
 } from "../storage/clubs-repo";
 import { exportBackup, importBackup, type HobbsTabBackup } from "../storage/backup-repo";
 import { deleteEntry, listEntries, saveEntry } from "../storage/entries-repo";
-import { getBudgetSetting, saveBudgetSetting } from "../storage/settings-repo";
+import {
+  deleteBudgetSetting,
+  listBudgetSettings,
+  saveBudgetSetting,
+} from "../storage/settings-repo";
 
 interface AppDataState {
   clubs: Club[];
@@ -54,6 +58,7 @@ interface AppDataState {
   planeRatePeriods: PlaneRatePeriod[];
   entries: EntryRecord[];
   budgetSetting?: BudgetSetting;
+  instructionBudgetOverrideSetting?: BudgetSetting;
   syntheticDues: ReturnType<typeof buildSyntheticDues>;
   monthlySummaries: ReturnType<typeof buildMonthlySummaries>;
   historyRows: ReturnType<typeof buildHistoryRows>;
@@ -90,6 +95,8 @@ interface AppDataState {
   exportBackupData: () => Promise<HobbsTabBackup>;
   importBackupData: (backup: unknown) => Promise<void>;
   updateAnnualBudget: (amount: number) => Promise<void>;
+  updateInstructionBudgetOverride: (amount: number) => Promise<void>;
+  clearInstructionBudgetOverride: () => Promise<void>;
 }
 
 const AppDataContext = createContext<AppDataState | undefined>(undefined);
@@ -101,6 +108,8 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
   const [planeRatePeriods, setPlaneRatePeriods] = useState<PlaneRatePeriod[]>([]);
   const [entries, setEntries] = useState<EntryRecord[]>([]);
   const [budgetSetting, setBudgetSetting] = useState<BudgetSetting>();
+  const [instructionBudgetOverrideSetting, setInstructionBudgetOverrideSetting] =
+    useState<BudgetSetting>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
@@ -115,7 +124,7 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
         loadedDuesPeriods,
         loadedPlaneRates,
         loadedEntries,
-        loadedBudgetSetting,
+        loadedBudgetSettings,
       ] =
         await Promise.all([
           listClubs(),
@@ -123,8 +132,15 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
           listClubDuesPeriods(),
           listPlaneRatePeriods(),
           listEntries(),
-          getBudgetSetting(),
+          listBudgetSettings(),
         ]);
+
+      const annualBudgetSetting = loadedBudgetSettings.find(
+        (setting) => setting.key === "annualBudget",
+      );
+      const instructionSetting = loadedBudgetSettings.find(
+        (setting) => setting.key === "instructionBudgetOverride",
+      );
 
       setClubs(loadedClubs.sort((left, right) => left.name.localeCompare(right.name)));
       setPlanes(
@@ -147,7 +163,8 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
         ),
       );
       setEntries(loadedEntries.sort((left, right) => right.date.localeCompare(left.date)));
-      setBudgetSetting(loadedBudgetSetting);
+      setBudgetSetting(annualBudgetSetting);
+      setInstructionBudgetOverrideSetting(instructionSetting);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error ? caughtError.message : "Unable to load local data.",
@@ -191,6 +208,7 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
     planeRatePeriods,
     entries,
     budgetSetting,
+    instructionBudgetOverrideSetting,
     syntheticDues,
     monthlySummaries,
     historyRows,
@@ -296,7 +314,11 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
     exportBackupData: async () => exportBackup(),
     importBackupData: async (backup) => persistAndRefresh(() => importBackup(backup)),
     updateAnnualBudget: async (amount) =>
-      persistAndRefresh(() => saveBudgetSetting(amount)),
+      persistAndRefresh(() => saveBudgetSetting("annualBudget", amount)),
+    updateInstructionBudgetOverride: async (amount) =>
+      persistAndRefresh(() => saveBudgetSetting("instructionBudgetOverride", amount)),
+    clearInstructionBudgetOverride: async () =>
+      persistAndRefresh(() => deleteBudgetSetting("instructionBudgetOverride")),
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

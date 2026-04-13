@@ -1,6 +1,5 @@
 import type { Club, ClubDuesPeriod, Plane, PlaneRatePeriod } from "../clubs/club-types";
 import { sortDuesPeriods } from "../clubs/club-rules";
-import { entryTotal } from "../entries/entry-rules";
 import type { EntryRecord, FlightEntry } from "../entries/entry-types";
 import { monthKeysBetween } from "../shared/dates";
 
@@ -81,6 +80,11 @@ const getApplicableRateForToday = (
     .sort((left, right) => right.effectiveFrom.localeCompare(left.effectiveFrom))
     .at(0);
 
+const buildInstructionYearWindow = (now: Date) =>
+  Array.from({ length: 3 }, (_, index) => now.getFullYear() - index - 1).filter(
+    (year) => year > 0,
+  );
+
 export interface BudgetPlaneOption {
   planeId: string;
   planeName: string;
@@ -90,11 +94,24 @@ export interface BudgetPlaneOption {
   hourlyRate: number;
 }
 
+export interface InstructionBudgetYearTotal {
+  year: number;
+  instructorCost: number;
+}
+
 export interface BudgetProjection {
   annualBudget?: number;
+  instructionBudgetOverride?: number;
   fixedCosts: number;
-  flightSpendThisYear: number;
-  flyingBudget: number;
+  plannedInstructionBudget: number;
+  plannedFlyingBudget: number;
+  instructionBudgetSource: "auto" | "override";
+  instructionBudgetYearsUsed: number[];
+  instructionYearlyTotals: InstructionBudgetYearTotal[];
+  aircraftSpendThisYear: number;
+  instructionSpendThisYear: number;
+  remainingInstructionBudget: number;
+  remainingFlyingBudget: number;
   cheapestPlane?: BudgetPlaneOption;
   projectedBillableHours?: number;
   projectedActualHours?: number;
@@ -112,6 +129,7 @@ export interface BudgetProjection {
 
 export const buildBudgetProjection = ({
   annualBudget,
+  instructionBudgetOverride,
   clubs,
   duesPeriods,
   planes,
@@ -120,6 +138,7 @@ export const buildBudgetProjection = ({
   now = new Date(),
 }: {
   annualBudget?: number;
+  instructionBudgetOverride?: number;
   clubs: Club[];
   duesPeriods: ClubDuesPeriod[];
   planes: Plane[];
@@ -129,15 +148,49 @@ export const buildBudgetProjection = ({
 }): BudgetProjection => {
   const fixedCosts = buildFixedCostTotal(clubs, duesPeriods, now);
   const annualBudgetValue = annualBudget === undefined ? undefined : roundCurrency(annualBudget);
+  const instructionBudgetOverrideValue =
+    instructionBudgetOverride === undefined ? undefined : roundCurrency(instructionBudgetOverride);
   const yearPrefix = `${now.getFullYear()}-`;
-  const flightSpendThisYear = roundCurrency(
-    entries
-      .filter((entry): entry is FlightEntry => isFlightEntry(entry) && entry.date.startsWith(yearPrefix))
-      .reduce((total, entry) => total + entryTotal(entry), 0),
+  const flightEntries = entries.filter(isFlightEntry);
+  const flightsThisYear = flightEntries.filter((entry) => entry.date.startsWith(yearPrefix));
+  const aircraftSpendThisYear = roundCurrency(
+    flightsThisYear.reduce((total, entry) => total + entry.aircraftCost, 0),
   );
-  const rawFlyingBudget =
-    annualBudgetValue === undefined ? 0 : annualBudgetValue - fixedCosts - flightSpendThisYear;
-  const flyingBudget = roundCurrency(Math.max(rawFlyingBudget, 0));
+  const instructionSpendThisYear = roundCurrency(
+    flightsThisYear.reduce((total, entry) => total + (entry.instructorCost ?? 0), 0),
+  );
+
+  const instructionBudgetYearsUsed = buildInstructionYearWindow(now);
+  const instructionYearlyTotals = instructionBudgetYearsUsed.map((year) => ({
+    year,
+    instructorCost: roundCurrency(
+      flightEntries
+        .filter((entry) => entry.date.startsWith(`${year}-`))
+        .reduce((total, entry) => total + (entry.instructorCost ?? 0), 0),
+    ),
+  }));
+  const autoInstructionBudget =
+    median(instructionYearlyTotals.map((item) => item.instructorCost)) ?? 0;
+  const plannedInstructionBudget = roundCurrency(
+    instructionBudgetOverrideValue ?? autoInstructionBudget,
+  );
+  const instructionBudgetSource = instructionBudgetOverrideValue === undefined ? "auto" : "override";
+
+  const rawPlannedFlyingBudget =
+    annualBudgetValue === undefined
+      ? 0
+      : annualBudgetValue - fixedCosts - plannedInstructionBudget;
+  const plannedFlyingBudget = roundCurrency(Math.max(rawPlannedFlyingBudget, 0));
+
+  const rawRemainingFlyingBudget =
+    annualBudgetValue === undefined
+      ? 0
+      : annualBudgetValue - fixedCosts - plannedInstructionBudget - aircraftSpendThisYear;
+  const remainingFlyingBudget = roundCurrency(Math.max(rawRemainingFlyingBudget, 0));
+  const remainingInstructionBudget = roundCurrency(
+    Math.max(plannedInstructionBudget - instructionSpendThisYear, 0),
+  );
+
   const today = now.toISOString().slice(0, 10);
   const clubsById = new Map(clubs.map((club) => [club.id, club]));
   const activePlanes = planes.filter((plane) => plane.active && clubsById.get(plane.clubId)?.active);
@@ -170,19 +223,13 @@ export const buildBudgetProjection = ({
 
   const projectedBillableHours =
     cheapestPlane && annualBudgetValue !== undefined
-      ? roundHours(flyingBudget / cheapestPlane.hourlyRate)
+      ? roundHours(remainingFlyingBudget / cheapestPlane.hourlyRate)
       : undefined;
 
-  const tachFlights = entries.filter(
-    (entry): entry is FlightEntry =>
-      isFlightEntry(entry) &&
-      entry.billingTimeTypeUsed === "tach" &&
-      entry.billedTime > 0 &&
-      entry.flightTime > 0,
+  const tachFlights = flightEntries.filter(
+    (entry) => entry.billingTimeTypeUsed === "tach" && entry.billedTime > 0 && entry.flightTime > 0,
   );
-  const tachToHobbsRatio = median(
-    tachFlights.map((entry) => entry.flightTime / entry.billedTime),
-  );
+  const tachToHobbsRatio = median(tachFlights.map((entry) => entry.flightTime / entry.billedTime));
 
   const projectedActualHours =
     projectedBillableHours !== undefined
@@ -193,10 +240,7 @@ export const buildBudgetProjection = ({
           : undefined
       : undefined;
 
-  const flightDurations = entries
-    .filter(isFlightEntry)
-    .map((entry) => entry.flightTime)
-    .filter((value) => value > 0);
+  const flightDurations = flightEntries.map((entry) => entry.flightTime).filter((value) => value > 0);
   const medianFlightHours = median(flightDurations);
   const isDefaultTypicalFlightHours = medianFlightHours === undefined;
   const typicalFlightHours = isDefaultTypicalFlightHours
@@ -207,10 +251,7 @@ export const buildBudgetProjection = ({
       ? floorCount(projectedActualHours / typicalFlightHours)
       : undefined;
 
-  const flightsCompletedThisYear = entries.filter(
-    (entry) => isFlightEntry(entry) && entry.date.startsWith(yearPrefix),
-  ).length;
-
+  const flightsCompletedThisYear = flightsThisYear.length;
   const flightsRemainingThisYear =
     projectedFlights !== undefined
       ? Math.max(projectedFlights - flightsCompletedThisYear, 0)
@@ -235,9 +276,17 @@ export const buildBudgetProjection = ({
 
   return {
     annualBudget: annualBudgetValue,
+    instructionBudgetOverride: instructionBudgetOverrideValue,
     fixedCosts,
-    flightSpendThisYear,
-    flyingBudget,
+    plannedInstructionBudget,
+    plannedFlyingBudget,
+    instructionBudgetSource,
+    instructionBudgetYearsUsed,
+    instructionYearlyTotals,
+    aircraftSpendThisYear,
+    instructionSpendThisYear,
+    remainingInstructionBudget,
+    remainingFlyingBudget,
     cheapestPlane,
     projectedBillableHours,
     projectedActualHours,
