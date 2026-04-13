@@ -6,6 +6,18 @@ import type {
 } from "../domain/clubs/club-types";
 import { db } from "./db";
 
+interface CompleteClubPayload {
+  club: Club;
+  duesPeriod: ClubDuesPeriod;
+  plane: Plane;
+  planeRatePeriod: PlaneRatePeriod;
+}
+
+interface PlaneWithRatePayload {
+  plane: Plane;
+  planeRatePeriod: PlaneRatePeriod;
+}
+
 export const listClubs = () => db.clubs.toArray();
 
 export const listPlanes = () => db.planes.toArray();
@@ -28,6 +40,34 @@ export const saveClubDuesPeriod = async (period: ClubDuesPeriod) => {
 
 export const savePlaneRatePeriod = async (period: PlaneRatePeriod) => {
   await db.planeRatePeriods.put(period);
+};
+
+export const savePlaneWithRate = async ({
+  plane,
+  planeRatePeriod,
+}: PlaneWithRatePayload) => {
+  await db.transaction("rw", [db.planes, db.planeRatePeriods], async () => {
+    await db.planes.put(plane);
+    await db.planeRatePeriods.put(planeRatePeriod);
+  });
+};
+
+export const saveCompleteClub = async ({
+  club,
+  duesPeriod,
+  plane,
+  planeRatePeriod,
+}: CompleteClubPayload) => {
+  await db.transaction(
+    "rw",
+    [db.clubs, db.clubDuesPeriods, db.planes, db.planeRatePeriods],
+    async () => {
+      await db.clubs.put(club);
+      await db.clubDuesPeriods.put(duesPeriod);
+      await db.planes.put(plane);
+      await db.planeRatePeriods.put(planeRatePeriod);
+    },
+  );
 };
 
 export const deleteClub = async (clubId: string) => {
