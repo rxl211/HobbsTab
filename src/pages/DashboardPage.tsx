@@ -14,7 +14,7 @@ import {
 import { formatCurrency, formatHours } from "../lib/formatters";
 
 export const DashboardPage = () => {
-  const { entries, historyRows, loading, monthlySummaries, syntheticDues } = useAppData();
+  const { entries, historyRows, loading, monthlySummaries, planes, syntheticDues } = useAppData();
   const [scope, setScope] = useState<SummaryScope>("thisYear");
 
   const totals = useMemo(
@@ -32,7 +32,7 @@ export const DashboardPage = () => {
         <div className="section-heading">
           <div>
             <h2>Dashboard</h2>
-            <p className="subtle">Visual breakdowns of your flying costs over time.</p>
+            <p className="subtle">Your flying costs over time</p>
           </div>
           <div className="segmented-control">
             {Object.entries(summaryScopeLabels).map(([value, label]) => (
@@ -66,15 +66,16 @@ export const DashboardPage = () => {
 
           <section className="page-grid">
             <DonutChart
-              title="Fixed vs Variable"
+              title="Spending breakdown"
               totalLabel={summaryScopeLabels[scope]}
               segments={[
-                { label: "Fixed", value: totals.fixedSpend, color: "#2563eb" },
-                { label: "Variable", value: totals.variableSpend, color: "#f59e0b" },
+                { label: "Dues", value: totals.duesSpend, color: "#2563eb" },
+                { label: "Flights", value: totals.flightSpend, color: "#f59e0b" },
+                { label: "Other Expenses", value: totals.otherExpenseSpend, color: "#0f766e" },
               ]}
             />
             <DonutChart
-              title="Hobby vs Training / Check"
+              title="Hobby vs Training / Check Flights"
               totalLabel={summaryScopeLabels[scope]}
               segments={[
                 { label: "Hobby", value: totals.hobbySpend, color: "#0f766e" },
@@ -89,6 +90,7 @@ export const DashboardPage = () => {
 
       <HistoryList
         rows={historyRows.slice(0, 8)}
+        planes={planes}
         title="Recent history"
         subtitle="Recent entries and club dues activity."
       />

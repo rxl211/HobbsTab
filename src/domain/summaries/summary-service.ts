@@ -1,5 +1,5 @@
-import type { Club, ClubRatePeriod } from "../clubs/club-types";
-import { sortRatePeriods } from "../clubs/club-rules";
+import type { Club, ClubDuesPeriod } from "../clubs/club-types";
+import { sortDuesPeriods } from "../clubs/club-rules";
 import { entryTotal } from "../entries/entry-rules";
 import type { EntryRecord } from "../entries/entry-types";
 import { currentMonthKey, monthKeysBetween, startOfMonth } from "../shared/dates";
@@ -12,7 +12,7 @@ import type {
 
 export const buildSyntheticDues = (
   clubs: Club[],
-  ratePeriods: ClubRatePeriod[],
+  duesPeriods: ClubDuesPeriod[],
   entries: EntryRecord[],
 ): SyntheticDueRow[] => {
   const latestEntryMonth = entries
@@ -25,7 +25,7 @@ export const buildSyntheticDues = (
       : currentMonthKey();
 
   return clubs.flatMap((club) => {
-    const periods = sortRatePeriods(ratePeriods.filter((period) => period.clubId === club.id));
+    const periods = sortDuesPeriods(duesPeriods.filter((period) => period.clubId === club.id));
     if (periods.length === 0) {
       return [];
     }
@@ -48,7 +48,7 @@ export const buildSyntheticDues = (
           monthKey,
           date: startOfMonth(`${monthKey}-01`),
           monthlyDues: applicable.monthlyDues,
-          ratePeriodId: applicable.id,
+          duesPeriodId: applicable.id,
         };
       },
     );
@@ -98,7 +98,7 @@ export const buildMonthlySummaries = (
     }
 
     summary.variableSpend += total;
-    summary.hoursFlown += entry.hobbsTime;
+    summary.hoursFlown += entry.flightTime;
     summary.flightCount += 1;
 
     if (entry.purpose === "hobby") {

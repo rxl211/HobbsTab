@@ -6,17 +6,17 @@ import { ExpenseEntryForm } from "../components/forms/expense-entry-form";
 import { FlightEntryForm } from "../components/forms/flight-entry-form";
 
 export const AddEntryPage = () => {
-  const { clubs, clubRatePeriods, createExpenseEntry, createFlightEntry } = useAppData();
+  const { clubs, planes, planeRatePeriods, createExpenseEntry, createFlightEntry } = useAppData();
   const [mode, setMode] = useState<"flight" | "expense">("flight");
   const [successMessage, setSuccessMessage] = useState<string>();
   const activeClubs = clubs.filter((club) => club.active);
+  const activePlanes = planes.filter((plane) => plane.active);
 
   return (
     <div className="page-stack">
       <section className="card">
         <div className="section-heading">
           <h2>Add entry</h2>
-          <p className="subtle">Choose the simplest flow and let the app calculate the rest.</p>
         </div>
         <div className="segmented-control">
           <button
@@ -45,13 +45,18 @@ export const AddEntryPage = () => {
       <section className="card">
         {successMessage ? (
           <div className="inline-note success-note">
-            {successMessage} <Link to="/history" className="success-link">View History</Link>.
+            {successMessage}{" "}
+            <Link to="/history" className="success-link">
+              View History
+            </Link>
+            .
           </div>
         ) : null}
         {mode === "flight" ? (
           <FlightEntryForm
             clubs={activeClubs}
-            ratePeriods={clubRatePeriods}
+            planes={activePlanes}
+            planeRatePeriods={planeRatePeriods}
             onSubmit={async (input) => {
               await createFlightEntry(input);
               setSuccessMessage(`Flight saved for ${input.date}.`);

@@ -8,7 +8,12 @@ import {
   type PropsWithChildren,
 } from "react";
 
-import type { Club, ClubRatePeriod } from "../domain/clubs/club-types";
+import type {
+  Club,
+  ClubDuesPeriod,
+  Plane,
+  PlaneRatePeriod,
+} from "../domain/clubs/club-types";
 import { buildExpenseEntry, buildFlightEntry } from "../domain/entries/entry-rules";
 import type {
   EntryRecord,
@@ -23,18 +28,26 @@ import {
 import { createId } from "../lib/ids";
 import {
   deleteClub,
-  deleteClubRatePeriod,
-  listClubRatePeriods,
+  deleteClubDuesPeriod,
+  deletePlane,
+  deletePlaneRatePeriod,
+  listClubDuesPeriods,
   listClubs,
+  listPlaneRatePeriods,
+  listPlanes,
   saveClub,
-  saveClubRatePeriod,
+  saveClubDuesPeriod,
+  savePlane,
+  savePlaneRatePeriod,
 } from "../storage/clubs-repo";
 import { exportBackup, importBackup, type HobbsTabBackup } from "../storage/backup-repo";
 import { deleteEntry, listEntries, saveEntry } from "../storage/entries-repo";
 
 interface AppDataState {
   clubs: Club[];
-  clubRatePeriods: ClubRatePeriod[];
+  planes: Plane[];
+  clubDuesPeriods: ClubDuesPeriod[];
+  planeRatePeriods: PlaneRatePeriod[];
   entries: EntryRecord[];
   syntheticDues: ReturnType<typeof buildSyntheticDues>;
   monthlySummaries: ReturnType<typeof buildMonthlySummaries>;
@@ -45,9 +58,15 @@ interface AppDataState {
   createClub: (club: Omit<Club, "id">) => Promise<void>;
   updateClub: (club: Club) => Promise<void>;
   removeClub: (clubId: string) => Promise<void>;
-  createRatePeriod: (ratePeriod: Omit<ClubRatePeriod, "id">) => Promise<void>;
-  updateRatePeriod: (ratePeriod: ClubRatePeriod) => Promise<void>;
-  removeRatePeriod: (ratePeriodId: string) => Promise<void>;
+  createPlane: (plane: Omit<Plane, "id">) => Promise<void>;
+  updatePlane: (plane: Plane) => Promise<void>;
+  removePlane: (planeId: string) => Promise<void>;
+  createClubDuesPeriod: (period: Omit<ClubDuesPeriod, "id">) => Promise<void>;
+  updateClubDuesPeriod: (period: ClubDuesPeriod) => Promise<void>;
+  removeClubDuesPeriod: (periodId: string) => Promise<void>;
+  createPlaneRatePeriod: (period: Omit<PlaneRatePeriod, "id">) => Promise<void>;
+  updatePlaneRatePeriod: (period: PlaneRatePeriod) => Promise<void>;
+  removePlaneRatePeriod: (periodId: string) => Promise<void>;
   createFlightEntry: (input: FlightEntryInput) => Promise<void>;
   updateFlightEntry: (entryId: string, input: FlightEntryInput) => Promise<void>;
   createExpenseEntry: (input: ExpenseEntryInput) => Promise<void>;
@@ -61,7 +80,9 @@ const AppDataContext = createContext<AppDataState | undefined>(undefined);
 
 export const AppDataProvider = ({ children }: PropsWithChildren) => {
   const [clubs, setClubs] = useState<Club[]>([]);
-  const [clubRatePeriods, setClubRatePeriods] = useState<ClubRatePeriod[]>([]);
+  const [planes, setPlanes] = useState<Plane[]>([]);
+  const [clubDuesPeriods, setClubDuesPeriods] = useState<ClubDuesPeriod[]>([]);
+  const [planeRatePeriods, setPlaneRatePeriods] = useState<PlaneRatePeriod[]>([]);
   const [entries, setEntries] = useState<EntryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
@@ -71,17 +92,32 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
     setError(undefined);
 
     try {
-      const [loadedClubs, loadedRatePeriods, loadedEntries] = await Promise.all([
-        listClubs(),
-        listClubRatePeriods(),
-        listEntries(),
-      ]);
+      const [loadedClubs, loadedPlanes, loadedDuesPeriods, loadedPlaneRates, loadedEntries] =
+        await Promise.all([
+          listClubs(),
+          listPlanes(),
+          listClubDuesPeriods(),
+          listPlaneRatePeriods(),
+          listEntries(),
+        ]);
 
       setClubs(loadedClubs.sort((left, right) => left.name.localeCompare(right.name)));
-      setClubRatePeriods(
-        loadedRatePeriods.sort((left, right) =>
+      setPlanes(
+        loadedPlanes.sort((left, right) =>
+          `${left.clubId}:${left.name}`.localeCompare(`${right.clubId}:${right.name}`),
+        ),
+      );
+      setClubDuesPeriods(
+        loadedDuesPeriods.sort((left, right) =>
           `${left.clubId}:${left.effectiveFrom}`.localeCompare(
             `${right.clubId}:${right.effectiveFrom}`,
+          ),
+        ),
+      );
+      setPlaneRatePeriods(
+        loadedPlaneRates.sort((left, right) =>
+          `${left.planeId}:${left.effectiveFrom}`.localeCompare(
+            `${right.planeId}:${right.effectiveFrom}`,
           ),
         ),
       );
@@ -100,8 +136,8 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
   }, [refresh]);
 
   const syntheticDues = useMemo(
-    () => buildSyntheticDues(clubs, clubRatePeriods, entries),
-    [clubs, clubRatePeriods, entries],
+    () => buildSyntheticDues(clubs, clubDuesPeriods, entries),
+    [clubs, clubDuesPeriods, entries],
   );
 
   const monthlySummaries = useMemo(
@@ -124,7 +160,9 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
 
   const value: AppDataState = {
     clubs,
-    clubRatePeriods,
+    planes,
+    clubDuesPeriods,
+    planeRatePeriods,
     entries,
     syntheticDues,
     monthlySummaries,
@@ -141,24 +179,44 @@ export const AppDataProvider = ({ children }: PropsWithChildren) => {
       ),
     updateClub: async (club) => persistAndRefresh(() => saveClub(club)),
     removeClub: async (clubId) => persistAndRefresh(() => deleteClub(clubId)),
-    createRatePeriod: async (ratePeriod) =>
+    createPlane: async (plane) =>
       persistAndRefresh(() =>
-        saveClubRatePeriod({
-          ...ratePeriod,
+        savePlane({
+          ...plane,
           id: createId(),
         }),
       ),
-    updateRatePeriod: async (ratePeriod) =>
-      persistAndRefresh(() => saveClubRatePeriod(ratePeriod)),
-    removeRatePeriod: async (ratePeriodId) =>
-      persistAndRefresh(() => deleteClubRatePeriod(ratePeriodId)),
+    updatePlane: async (plane) => persistAndRefresh(() => savePlane(plane)),
+    removePlane: async (planeId) => persistAndRefresh(() => deletePlane(planeId)),
+    createClubDuesPeriod: async (period) =>
+      persistAndRefresh(() =>
+        saveClubDuesPeriod({
+          ...period,
+          id: createId(),
+        }),
+      ),
+    updateClubDuesPeriod: async (period) =>
+      persistAndRefresh(() => saveClubDuesPeriod(period)),
+    removeClubDuesPeriod: async (periodId) =>
+      persistAndRefresh(() => deleteClubDuesPeriod(periodId)),
+    createPlaneRatePeriod: async (period) =>
+      persistAndRefresh(() =>
+        savePlaneRatePeriod({
+          ...period,
+          id: createId(),
+        }),
+      ),
+    updatePlaneRatePeriod: async (period) =>
+      persistAndRefresh(() => savePlaneRatePeriod(period)),
+    removePlaneRatePeriod: async (periodId) =>
+      persistAndRefresh(() => deletePlaneRatePeriod(periodId)),
     createFlightEntry: async (input) =>
       persistAndRefresh(() =>
-        saveEntry(buildFlightEntry(createId(), input, clubRatePeriods)),
+        saveEntry(buildFlightEntry(createId(), input, planeRatePeriods)),
       ),
     updateFlightEntry: async (entryId, input) =>
       persistAndRefresh(() =>
-        saveEntry(buildFlightEntry(entryId, input, clubRatePeriods)),
+        saveEntry(buildFlightEntry(entryId, input, planeRatePeriods)),
       ),
     createExpenseEntry: async (input) =>
       persistAndRefresh(() => saveEntry(buildExpenseEntry(createId(), input))),
