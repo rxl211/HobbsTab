@@ -135,6 +135,7 @@ const PlaneCard = ({ clubId, plane }: { clubId: string; plane: Plane }) => {
 const ClubCard = ({ club }: { club: Club }) => {
   const [activeTab, setActiveTab] = useState<ClubTab>("dues");
   const [isDuesTableVisible, setIsDuesTableVisible] = useState(false);
+  const [isAddPlaneVisible, setIsAddPlaneVisible] = useState(false);
   const {
     planes,
     clubDuesPeriods,
@@ -200,24 +201,28 @@ const ClubCard = ({ club }: { club: Club }) => {
 
       {activeTab === "dues" ? (
         <div className="page-stack">
-          <section className="club-chart-section">
-            <LineChart
-              title="Club dues over time"
-              subtitle=""
-              points={duesTrend}
-              emptyMessage="No club dues yet."
-            />
-          </section>
+          {duesPeriods.length > 0 ? (
+            <>
+              <section className="club-chart-section">
+                <LineChart
+                  title="Club dues over time"
+                  subtitle=""
+                  points={duesTrend}
+                  emptyMessage="No club dues yet."
+                />
+              </section>
 
-          <div className="stack-block">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setIsDuesTableVisible((current) => !current)}
-            >
-              {isDuesTableVisible ? "Hide table" : "View as table"}
-            </button>
-          </div>
+              <div className="stack-block">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsDuesTableVisible((current) => !current)}
+                >
+                  {isDuesTableVisible ? "Hide table" : "View as table"}
+                </button>
+              </div>
+            </>
+          ) : null}
 
           <div className="stack-block">
             <h3>Add dues period</h3>
@@ -258,8 +263,36 @@ const ClubCard = ({ club }: { club: Club }) => {
       ) : (
         <div className="page-stack">
           <div className="stack-block">
-            <h3>Add plane</h3>
-            <PlaneForm clubId={club.id} onSubmit={createPlane} />
+            {clubPlanes.length > 0 ? (
+              <>
+                {isAddPlaneVisible ? null : (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setIsAddPlaneVisible(true)}
+                  >
+                    Add Plane
+                  </button>
+                )}
+                {isAddPlaneVisible ? (
+                  <div className="stack-block">
+                    <h3>Add plane</h3>
+                    <PlaneForm
+                      clubId={club.id}
+                      onSubmit={async (value) => {
+                        await createPlane(value);
+                        setIsAddPlaneVisible(false);
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <h3>Add plane</h3>
+                <PlaneForm clubId={club.id} onSubmit={createPlane} />
+              </>
+            )}
           </div>
 
           <div className="stack-block">
