@@ -42,6 +42,37 @@ npm run build
 npm run preview
 ```
 
+## Deploy To Cloudflare Pages
+
+This app can be deployed to Cloudflare Pages as a static site.
+
+Recommended Pages settings:
+
+- Framework preset: `React (Vite)`
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Root directory: leave blank
+- Node.js version: `22` if Cloudflare asks
+
+Routing note:
+
+- HobbsTab uses React Router's browser history mode.
+- Cloudflare Pages already supports single-page app routing by default when there is no top-level `404.html`, so no custom redirect file is needed for routes like `/history` or `/clubs`.
+
+Typical deploy flow:
+
+1. Push this repo to GitHub.
+2. In Cloudflare, go to Workers & Pages and create a new Pages project.
+3. Connect the GitHub repo.
+4. Enter the build settings above.
+5. Save and deploy.
+
+After deployment:
+
+- open the generated `.pages.dev` URL
+- verify you can refresh on routes such as `/history` and `/clubs`
+- remember app data is stored in the browser with IndexedDB, so each browser/profile keeps its own local data
+
 ## Data Storage
 
 HobbsTab stores data locally in the browser using IndexedDB.

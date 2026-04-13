@@ -19,3 +19,8 @@
 - Add a merged comparison page that starts from BudgetViz and promotes projected flights as the main outcome.
 - Include an expandable explanation of how projected flights were derived from budget, rate, conversion, and historical duration.
 - Consolidate flight progress into one primary progress section and keep the other budget variants unchanged for comparison.
+
+## Cloudflare Pages Deployment
+- Add the static hosting support needed for a Vite single-page app that uses browser-based routing.
+- Document the exact Cloudflare Pages build settings and deployment steps in the project README.
+- Verify the app still builds and passes tests after the deployment changes.
