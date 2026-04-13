@@ -12,6 +12,7 @@ It is built for the common case of one person tracking club dues, flight costs, 
 - Derive monthly dues from club rate history
 - View recent history with edit and delete support
 - See dashboard summaries and monthly trends
+- Set an annual budget and track flying vs instruction budget progress
 - View club dues and rate changes over time
 - Export and import local JSON backups
 
