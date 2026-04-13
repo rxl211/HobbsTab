@@ -16,6 +16,7 @@ type ClubTab = "dues" | "planes";
 
 const PlaneCard = ({ clubId, plane }: { clubId: string; plane: Plane }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isRatesTableVisible, setIsRatesTableVisible] = useState(false);
   const {
     planeRatePeriods,
     updatePlane,
@@ -71,42 +72,6 @@ const PlaneCard = ({ clubId, plane }: { clubId: string; plane: Plane }) => {
         />
       ) : null}
 
-      <div className="stack-block">
-        <h3>Rate periods</h3>
-        {rates.length === 0 ? (
-          <p className="subtle">No rate periods yet.</p>
-        ) : (
-          <div className="history-list">
-            {displayedRates.map((period) => (
-              <div key={period.id} className="history-row compact">
-                <div>
-                  <p className="history-title">{monthLabel(period.effectiveFrom.slice(0, 7))}</p>
-                  <p className="history-meta">
-                    {period.billingTimeType} billed • {formatCurrency(period.hourlyRate)}/hr
-                  </p>
-                </div>
-                <div className="history-actions">
-                  <button
-                    type="button"
-                    className="link-button danger"
-                    onClick={() => {
-                      void removePlaneRatePeriod(period.id);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="stack-block">
-        <h3>Add plane rate</h3>
-        <PlaneRatePeriodForm planeId={plane.id} onSubmit={createPlaneRatePeriod} />
-      </div>
-
       <section className="club-chart-section">
         <LineChart
           title="Plane rate over time"
@@ -115,12 +80,61 @@ const PlaneCard = ({ clubId, plane }: { clubId: string; plane: Plane }) => {
           emptyMessage="No plane rate changes yet."
         />
       </section>
+
+      <div className="stack-block">
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => setIsRatesTableVisible((current) => !current)}
+        >
+          {isRatesTableVisible ? "Hide table" : "View as table"}
+        </button>
+      </div>
+
+      <div className="stack-block">
+        <h3>Add plane rate</h3>
+        <PlaneRatePeriodForm planeId={plane.id} onSubmit={createPlaneRatePeriod} />
+      </div>
+
+      {isRatesTableVisible ? (
+        <div className="stack-block">
+          <h3>Rate periods</h3>
+          {rates.length === 0 ? (
+            <p className="subtle">No rate periods yet.</p>
+          ) : (
+            <div className="history-list">
+              {displayedRates.map((period) => (
+                <div key={period.id} className="history-row compact">
+                  <div>
+                    <p className="history-title">{monthLabel(period.effectiveFrom.slice(0, 7))}</p>
+                    <p className="history-meta">
+                      {period.billingTimeType} billed - {formatCurrency(period.hourlyRate)}/hr
+                    </p>
+                  </div>
+                  <div className="history-actions">
+                    <button
+                      type="button"
+                      className="link-button danger"
+                      onClick={() => {
+                        void removePlaneRatePeriod(period.id);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </article>
   );
 };
 
 const ClubCard = ({ club }: { club: Club }) => {
   const [activeTab, setActiveTab] = useState<ClubTab>("dues");
+  const [isDuesTableVisible, setIsDuesTableVisible] = useState(false);
   const {
     planes,
     clubDuesPeriods,
@@ -144,7 +158,7 @@ const ClubCard = ({ club }: { club: Club }) => {
           <h2>{club.name}</h2>
           <p className="subtle">
             {club.active ? "Active" : "Inactive"}
-            {club.notes ? ` • ${club.notes}` : ""}
+            {club.notes ? ` - ${club.notes}` : ""}
           </p>
         </div>
         <div className="history-actions">
@@ -186,40 +200,6 @@ const ClubCard = ({ club }: { club: Club }) => {
 
       {activeTab === "dues" ? (
         <div className="page-stack">
-          <div className="stack-block">
-            <h3>Club dues</h3>
-            {duesPeriods.length === 0 ? (
-              <p className="subtle">No dues periods yet.</p>
-            ) : (
-              <div className="history-list">
-                {displayedDuesPeriods.map((period) => (
-                  <div key={period.id} className="history-row compact">
-                    <div>
-                      <p className="history-title">{monthLabel(period.effectiveFrom.slice(0, 7))}</p>
-                      <p className="history-meta">dues {formatCurrency(period.monthlyDues)}</p>
-                    </div>
-                    <div className="history-actions">
-                      <button
-                        type="button"
-                        className="link-button danger"
-                        onClick={() => {
-                          void removeClubDuesPeriod(period.id);
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="stack-block">
-            <h3>Add dues period</h3>
-            <ClubDuesPeriodForm clubId={club.id} onSubmit={createClubDuesPeriod} />
-          </div>
-
           <section className="club-chart-section">
             <LineChart
               title="Club dues over time"
@@ -228,6 +208,52 @@ const ClubCard = ({ club }: { club: Club }) => {
               emptyMessage="No club dues yet."
             />
           </section>
+
+          <div className="stack-block">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setIsDuesTableVisible((current) => !current)}
+            >
+              {isDuesTableVisible ? "Hide table" : "View as table"}
+            </button>
+          </div>
+
+          <div className="stack-block">
+            <h3>Add dues period</h3>
+            <ClubDuesPeriodForm clubId={club.id} onSubmit={createClubDuesPeriod} />
+          </div>
+
+          {isDuesTableVisible ? (
+            <div className="stack-block">
+              <h3>Club dues</h3>
+              {duesPeriods.length === 0 ? (
+                <p className="subtle">No dues periods yet.</p>
+              ) : (
+                <div className="history-list">
+                  {displayedDuesPeriods.map((period) => (
+                    <div key={period.id} className="history-row compact">
+                      <div>
+                        <p className="history-title">{monthLabel(period.effectiveFrom.slice(0, 7))}</p>
+                        <p className="history-meta">dues {formatCurrency(period.monthlyDues)}</p>
+                      </div>
+                      <div className="history-actions">
+                        <button
+                          type="button"
+                          className="link-button danger"
+                          onClick={() => {
+                            void removeClubDuesPeriod(period.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="page-stack">
