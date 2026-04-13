@@ -7,22 +7,20 @@ import { HistoryList } from "../components/common/history-list";
 import { MetricCard } from "../components/common/metric-card";
 import { MonthTrend } from "../components/common/month-trend";
 import {
-  buildScopedMonthlySummaries,
-  buildSummaryTotals,
+  buildScopedSummaryTotals,
   summaryScopeLabels,
   type SummaryScope,
 } from "../domain/summaries/summary-view";
 import { formatCurrency, formatHours } from "../lib/formatters";
 
 export const DashboardPage = () => {
-  const { historyRows, loading, monthlySummaries } = useAppData();
+  const { entries, historyRows, loading, monthlySummaries, syntheticDues } = useAppData();
   const [scope, setScope] = useState<SummaryScope>("thisYear");
 
-  const scopedMonthly = useMemo(
-    () => buildScopedMonthlySummaries(monthlySummaries, scope),
-    [monthlySummaries, scope],
+  const totals = useMemo(
+    () => buildScopedSummaryTotals(entries, syntheticDues, scope),
+    [entries, syntheticDues, scope],
   );
-  const totals = useMemo(() => buildSummaryTotals(scopedMonthly), [scopedMonthly]);
 
   if (loading) {
     return <section className="card">Loading your local data...</section>;
@@ -61,8 +59,8 @@ export const DashboardPage = () => {
               value={formatHours(totals.hoursFlown)}
             />
             <MetricCard
-              label="Months included"
-              value={String(scopedMonthly.length)}
+              label="Number of flights"
+              value={String(totals.flightCount)}
             />
           </section>
 

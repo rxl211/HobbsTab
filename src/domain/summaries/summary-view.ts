@@ -1,4 +1,7 @@
 import type { Club, ClubRatePeriod } from "../clubs/club-types";
+import { entryTotal } from "../entries/entry-rules";
+import type { EntryRecord } from "../entries/entry-types";
+import { isFlightEntry, type SyntheticDueRow } from "./summary-types";
 import type { MonthlySummary } from "./summary-types";
 import { monthLabel } from "../shared/dates";
 
@@ -18,6 +21,7 @@ export interface SummaryViewTotals {
   hobbySpend: number;
   trainingSpend: number;
   hoursFlown: number;
+  flightCount: number;
 }
 
 export interface SummaryTrendPoint {
@@ -56,6 +60,86 @@ export const buildScopedMonthlySummaries = (
   });
 };
 
+const dateValue = (isoDate: string) => new Date(`${isoDate}T12:00:00`);
+
+const isWithinScope = (isoDate: string, scope: SummaryScope, now: Date) => {
+  const rowDate = dateValue(isoDate);
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const currentYear = now.getFullYear().toString();
+
+  if (scope === "thisMonth") {
+    return isoDate.slice(0, 7) === currentMonth;
+  }
+
+  if (scope === "thisYear") {
+    return isoDate.startsWith(currentYear);
+  }
+
+  if (scope === "oneYear") {
+    const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    cutoff.setDate(cutoff.getDate() - 365);
+    return rowDate >= cutoff;
+  }
+
+  return true;
+};
+
+export const buildScopedSummaryTotals = (
+  entries: EntryRecord[],
+  syntheticDues: SyntheticDueRow[],
+  scope: SummaryScope,
+  now = new Date(),
+): SummaryViewTotals => {
+  const includedEntries = entries.filter((entry) => isWithinScope(entry.date, scope, now));
+  const includedDues = syntheticDues.filter((due) => isWithinScope(due.date, scope, now));
+
+  const totals = {
+    totalSpend: 0,
+    fixedSpend: 0,
+    variableSpend: 0,
+    hobbySpend: 0,
+    trainingSpend: 0,
+    hoursFlown: 0,
+    flightCount: 0,
+  };
+
+  includedEntries.forEach((entry) => {
+    const total = entryTotal(entry);
+    totals.totalSpend += total;
+    totals.variableSpend += total;
+
+    if (!isFlightEntry(entry)) {
+      return;
+    }
+
+    totals.flightCount += 1;
+    totals.hoursFlown += entry.hobbsTime;
+
+    if (entry.purpose === "hobby") {
+      totals.hobbySpend += total;
+      return;
+    }
+
+    totals.trainingSpend += total;
+  });
+
+  includedDues.forEach((due) => {
+    totals.totalSpend += due.monthlyDues;
+    totals.fixedSpend += due.monthlyDues;
+  });
+
+  return {
+    ...totals,
+    totalSpend: Number(totals.totalSpend.toFixed(2)),
+    fixedSpend: Number(totals.fixedSpend.toFixed(2)),
+    variableSpend: Number(totals.variableSpend.toFixed(2)),
+    hobbySpend: Number(totals.hobbySpend.toFixed(2)),
+    trainingSpend: Number(totals.trainingSpend.toFixed(2)),
+    hoursFlown: Number(totals.hoursFlown.toFixed(2)),
+    flightCount: totals.flightCount,
+  };
+};
+
 export const buildSummaryTotals = (
   scopedMonthly: MonthlySummary[],
 ): SummaryViewTotals =>
@@ -67,6 +151,7 @@ export const buildSummaryTotals = (
       hobbySpend: accumulator.hobbySpend + summary.hobbySpend,
       trainingSpend: accumulator.trainingSpend + summary.trainingSpend,
       hoursFlown: accumulator.hoursFlown + summary.hoursFlown,
+      flightCount: accumulator.flightCount + summary.flightCount,
     }),
     {
       totalSpend: 0,
@@ -75,6 +160,7 @@ export const buildSummaryTotals = (
       hobbySpend: 0,
       trainingSpend: 0,
       hoursFlown: 0,
+      flightCount: 0,
     },
   );
 
