@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { EntryRecord } from "../entries/entry-types";
 import type { SyntheticDueRow } from "./summary-types";
-import { buildScopedSummaryTotals } from "./summary-view";
+import { buildScopedSummaryTotals, buildSpendTrendBuckets } from "./summary-view";
 
 const entries: EntryRecord[] = [
   {
@@ -86,5 +86,58 @@ describe("summary view", () => {
     expect(totals.duesSpend).toBe(115);
     expect(totals.totalSpend).toBe(711);
     expect(totals.flightCount).toBe(2);
+  });
+
+  it("aggregates monthly summaries into yearly trend buckets", () => {
+    const buckets = buildSpendTrendBuckets(
+      [
+        {
+          monthKey: "2024-12",
+          totalSpend: 200,
+          fixedSpend: 50,
+          variableSpend: 150,
+          hobbySpend: 120,
+          trainingSpend: 30,
+          checkFlightSpend: 0,
+          hoursFlown: 1.5,
+          costPerHour: 133.33,
+          flightCount: 1,
+          expenseCount: 0,
+        },
+        {
+          monthKey: "2026-01",
+          totalSpend: 75,
+          fixedSpend: 25,
+          variableSpend: 50,
+          hobbySpend: 0,
+          trainingSpend: 50,
+          checkFlightSpend: 0,
+          hoursFlown: 0.5,
+          costPerHour: 150,
+          flightCount: 1,
+          expenseCount: 0,
+        },
+        {
+          monthKey: "2026-03",
+          totalSpend: 125,
+          fixedSpend: 25,
+          variableSpend: 100,
+          hobbySpend: 100,
+          trainingSpend: 0,
+          checkFlightSpend: 0,
+          hoursFlown: 0.9,
+          costPerHour: 138.89,
+          flightCount: 1,
+          expenseCount: 0,
+        },
+      ],
+      "year",
+    );
+
+    expect(buckets).toEqual([
+      { id: "2024", label: "2024", totalSpend: 200 },
+      { id: "2025", label: "2025", totalSpend: 0 },
+      { id: "2026", label: "2026", totalSpend: 200 },
+    ]);
   });
 });

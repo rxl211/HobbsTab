@@ -8,6 +8,8 @@ export const monthLabel = (monthKey: string) =>
     year: "numeric",
   });
 
+export const yearLabel = (yearKey: string) => yearKey;
+
 export const formatDate = (isoDate: string) =>
   new Date(`${isoDate}T00:00:00`).toLocaleDateString("en-US", {
     month: "short",
@@ -28,4 +30,17 @@ export const monthKeysBetween = (startMonth: string, endMonth: string) => {
   }
 
   return months;
+};
+
+export const yearKeysBetween = (startYear: string, endYear: string) => {
+  const years: string[] = [];
+  let cursor = Number(startYear);
+  const end = Number(endYear);
+
+  while (cursor <= end) {
+    years.push(String(cursor));
+    cursor += 1;
+  }
+
+  return years;
 };

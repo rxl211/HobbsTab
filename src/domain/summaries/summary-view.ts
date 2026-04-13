@@ -8,7 +8,7 @@ import { entryTotal } from "../entries/entry-rules";
 import type { EntryRecord } from "../entries/entry-types";
 import { isFlightEntry, type SyntheticDueRow } from "./summary-types";
 import type { MonthlySummary } from "./summary-types";
-import { monthLabel } from "../shared/dates";
+import { monthKeysBetween, monthLabel, yearKeysBetween, yearLabel } from "../shared/dates";
 
 export type SummaryScope = "thisMonth" | "thisYear" | "oneYear" | "allTime";
 
@@ -38,6 +38,19 @@ export interface SummaryTrendPoint {
   value: number;
 }
 
+export type TrendGranularity = "month" | "year";
+
+export const trendGranularityLabels: Record<TrendGranularity, string> = {
+  month: "Month",
+  year: "Year",
+};
+
+export interface SpendTrendBucket {
+  id: string;
+  label: string;
+  totalSpend: number;
+}
+
 export const buildScopedMonthlySummaries = (
   monthlySummaries: MonthlySummary[],
   scope: SummaryScope,
@@ -64,6 +77,60 @@ export const buildScopedMonthlySummaries = (
 
     return true;
   });
+};
+
+const emptyMonthlySummary = (monthKey: string): MonthlySummary => ({
+  monthKey,
+  totalSpend: 0,
+  fixedSpend: 0,
+  variableSpend: 0,
+  hobbySpend: 0,
+  trainingSpend: 0,
+  checkFlightSpend: 0,
+  hoursFlown: 0,
+  costPerHour: 0,
+  flightCount: 0,
+  expenseCount: 0,
+});
+
+export const buildSpendTrendBuckets = (
+  monthlySummaries: MonthlySummary[],
+  granularity: TrendGranularity,
+): SpendTrendBucket[] => {
+  if (monthlySummaries.length === 0) {
+    return [];
+  }
+
+  if (granularity === "year") {
+    const yearlyTotals = monthlySummaries.reduce<Map<string, number>>((totalsByYear, summary) => {
+      const yearKey = summary.monthKey.slice(0, 4);
+      totalsByYear.set(yearKey, (totalsByYear.get(yearKey) ?? 0) + summary.totalSpend);
+      return totalsByYear;
+    }, new Map());
+
+    const sortedYears = [...yearlyTotals.keys()].sort((left, right) => left.localeCompare(right));
+
+    return yearKeysBetween(sortedYears[0], sortedYears.at(-1) ?? sortedYears[0]).map((yearKey) => ({
+      id: yearKey,
+      label: yearLabel(yearKey),
+      totalSpend: Number((yearlyTotals.get(yearKey) ?? 0).toFixed(2)),
+    }));
+  }
+
+  const summaryByMonth = new Map(monthlySummaries.map((summary) => [summary.monthKey, summary]));
+  const sortedMonths = [...summaryByMonth.keys()].sort((left, right) => left.localeCompare(right));
+
+  return monthKeysBetween(sortedMonths[0], sortedMonths.at(-1) ?? sortedMonths[0]).map(
+    (monthKey) => {
+      const summary = summaryByMonth.get(monthKey) ?? emptyMonthlySummary(monthKey);
+
+      return {
+        id: monthKey,
+        label: monthLabel(monthKey),
+        totalSpend: summary.totalSpend,
+      };
+    },
+  );
 };
 
 const dateValue = (isoDate: string) => new Date(`${isoDate}T12:00:00`);
