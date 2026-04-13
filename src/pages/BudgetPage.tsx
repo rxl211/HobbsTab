@@ -30,9 +30,7 @@ export const BudgetPage = () => {
     instructionBudgetOverrideSetting?.amount?.toString() ?? "",
   );
   const [error, setError] = useState<string>();
-  const [successMessage, setSuccessMessage] = useState<string>();
   const [instructionError, setInstructionError] = useState<string>();
-  const [instructionSuccessMessage, setInstructionSuccessMessage] = useState<string>();
   const [isBudgetEditorVisible, setIsBudgetEditorVisible] = useState(false);
   const [isInstructionEditorVisible, setIsInstructionEditorVisible] = useState(false);
   const currentYear = new Date().getFullYear();
@@ -96,6 +94,31 @@ export const BudgetPage = () => {
   const fixedStop = clampPercent(fixedPercent);
   const instructionStop = clampPercent(fixedPercent + instructionPercent);
   const instructionYearsLabel = projection.instructionBudgetYearsUsed.join(", ");
+  const isWaitingOnPlaneRate =
+    projection.projectedFlightsUnavailableReason === "No active plane/rate is available yet.";
+  const heroMissionSummary = !budgetAvailable
+    ? undefined
+    : projection.projectedFlights !== undefined && projection.projectedActualHours !== undefined
+      ? {
+          title: `At current rates, your budget supports about ${formatNumber(
+            projection.projectedFlights,
+          )} flights this year.`,
+          detail:
+            "Use the breakdown below to see how dues, instruction, current aircraft rates, and your past flights shape that forecast.",
+        }
+      : isWaitingOnPlaneRate
+        ? {
+            title: "Flight projections unlock once you add a club and plane rate.",
+            detail: `Your budget still leaves ${formatCurrency(
+              projection.remainingFlyingBudget,
+            )} available for airplane time once a current rate is in place.`,
+          }
+        : {
+            title: "Your budget is ready for flight planning.",
+            detail: `Once the remaining projection inputs are available, we'll translate ${formatCurrency(
+              projection.remainingFlyingBudget,
+            )} into projected hours and flights.`,
+          };
 
   return (
     <div className="page-stack">
@@ -107,6 +130,17 @@ export const BudgetPage = () => {
             See how your annual budget translates into projected flight hours, total flights, and
             progress through the year.
           </p>
+          {heroMissionSummary ? (
+            <div className="budget-hero-mission">
+              <strong>{heroMissionSummary.title}</strong>
+              <p className="subtle">{heroMissionSummary.detail}</p>
+              {isWaitingOnPlaneRate ? (
+                <Link to="/clubs" className="budget-hero-link">
+                  Create Club
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="viz-hero-value">
           <span className="viz-kicker">Budget target</span>
@@ -117,7 +151,6 @@ export const BudgetPage = () => {
             onClick={() => {
               setIsBudgetEditorVisible((current) => !current);
               setError(undefined);
-              setSuccessMessage(undefined);
             }}
           >
             {isBudgetEditorVisible ? "Close" : budgetAvailable ? "Edit budget" : "Set budget"}
@@ -129,7 +162,6 @@ export const BudgetPage = () => {
               onSubmit={async (event) => {
                 event.preventDefault();
                 setError(undefined);
-                setSuccessMessage(undefined);
 
                 const nextBudget = budgetInputToNumber(budgetInput);
 
@@ -139,7 +171,6 @@ export const BudgetPage = () => {
                 }
 
                 await updateAnnualBudget(nextBudget);
-                setSuccessMessage(`Saved your ${currentYear} budget.`);
                 setIsBudgetEditorVisible(false);
               }}
             >
@@ -153,7 +184,6 @@ export const BudgetPage = () => {
                   onChange={(event) => {
                     setBudgetInput(event.target.value);
                     setError(undefined);
-                    setSuccessMessage(undefined);
                   }}
                   placeholder="12000"
                 />
@@ -166,7 +196,7 @@ export const BudgetPage = () => {
 
           <div className="budget-hero-secondary">
             <div>
-              <div className="field-label-with-help">
+              <div className="budget-hero-label-with-help">
                 <span className="viz-kicker">CFI budget</span>
                 <span className="info-tooltip">
                   <button
@@ -191,13 +221,12 @@ export const BudgetPage = () => {
             </div>
             <button
               type="button"
-              className="final-budget-edit-button"
-              onClick={() => {
-                setIsInstructionEditorVisible((current) => !current);
-                setInstructionError(undefined);
-                setInstructionSuccessMessage(undefined);
-              }}
-            >
+            className="final-budget-edit-button"
+            onClick={() => {
+              setIsInstructionEditorVisible((current) => !current);
+              setInstructionError(undefined);
+            }}
+          >
               {isInstructionEditorVisible
                 ? "Close"
                 : instructionBudgetOverrideSetting
@@ -212,7 +241,6 @@ export const BudgetPage = () => {
               onSubmit={async (event) => {
                 event.preventDefault();
                 setInstructionError(undefined);
-                setInstructionSuccessMessage(undefined);
 
                 const nextInstructionBudget = budgetInputToNumber(instructionInput);
 
@@ -222,7 +250,6 @@ export const BudgetPage = () => {
                 }
 
                 await updateInstructionBudgetOverride(nextInstructionBudget);
-                setInstructionSuccessMessage(`Saved your ${currentYear} CFI budget.`);
                 setIsInstructionEditorVisible(false);
               }}
             >
@@ -236,7 +263,6 @@ export const BudgetPage = () => {
                   onChange={(event) => {
                     setInstructionInput(event.target.value);
                     setInstructionError(undefined);
-                    setInstructionSuccessMessage(undefined);
                   }}
                   placeholder="0"
                 />
@@ -251,10 +277,8 @@ export const BudgetPage = () => {
                     className="secondary-button"
                     onClick={async () => {
                       setInstructionError(undefined);
-                      setInstructionSuccessMessage(undefined);
                       await clearInstructionBudgetOverride();
                       setInstructionInput("");
-                      setInstructionSuccessMessage("Returned CFI budget to the automatic default.");
                       setIsInstructionEditorVisible(false);
                     }}
                   >
@@ -266,11 +290,7 @@ export const BudgetPage = () => {
           ) : null}
 
           {error ? <p className="form-error">{error}</p> : null}
-          {successMessage ? <div className="inline-note success-note">{successMessage}</div> : null}
           {instructionError ? <p className="form-error">{instructionError}</p> : null}
-          {instructionSuccessMessage ? (
-            <div className="inline-note success-note">{instructionSuccessMessage}</div>
-          ) : null}
         </div>
       </section>
 
