@@ -302,144 +302,6 @@ export const BudgetPage = () => {
             <article className="card viz-budget-card">
               <div className="section-heading">
                 <div>
-                  <h3>Budget split</h3>
-                  <p className="subtle">Fixed dues, CFI, and airplane budget for the year.</p>
-                </div>
-              </div>
-              <>
-                <div className="viz-budget-layout">
-                  <div
-                    className="viz-budget-donut"
-                    style={{
-                      background: `conic-gradient(#d97706 0% ${fixedStop}%, #2563eb ${fixedStop}% ${instructionStop}%, #0f766e ${instructionStop}% 100%)`,
-                    }}
-                  >
-                    <div className="viz-budget-center">
-                      <strong>{formatCurrency(annualBudget)}</strong>
-                      <span>Total budget</span>
-                    </div>
-                  </div>
-                  <div className="viz-legend-stack">
-                    <div className="viz-legend-card">
-                      <span className="viz-dot gold" />
-                      <div>
-                        <p className="viz-kicker">Fixed dues</p>
-                        <strong>{formatCurrency(projection.fixedCosts)}</strong>
-                        <p className="subtle">{formatNumber(fixedPercent)}% of annual budget</p>
-                      </div>
-                    </div>
-                    <div className="viz-legend-card">
-                      <span className="viz-dot blue" />
-                      <div>
-                        <p className="viz-kicker">CFI</p>
-                        <strong>{formatCurrency(projection.plannedInstructionBudget)}</strong>
-                        <p className="subtle">{formatNumber(instructionPercent)}% of annual budget</p>
-                      </div>
-                    </div>
-                    <div className="viz-legend-card">
-                      <span className="viz-dot teal" />
-                      <div>
-                        <p className="viz-kicker">Left for flying</p>
-                        <strong>{formatCurrency(projection.plannedFlyingBudget)}</strong>
-                        <p className="subtle">{formatNumber(flyingPercent)}% of annual budget</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="budget-progress-stack">
-                  <div className="final-budget-progress-card">
-                    <div className="section-heading">
-                      <div>
-                        <h3>Instruction budget progress</h3>
-                        <p className="subtle">
-                          How much of your planned instruction budget has already been used.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="final-budget-progress-grid">
-                      <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Instruction</span>
-                        <strong>{formatCurrency(projection.plannedInstructionBudget)}</strong>
-                      </div>
-                      <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Spent on instruction YTD</span>
-                        <strong>{formatCurrency(projection.instructionSpendThisYear)}</strong>
-                      </div>
-                      <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Still available</span>
-                        <strong>{formatCurrency(projection.remainingInstructionBudget)}</strong>
-                      </div>
-                    </div>
-
-                    <div className="final-budget-progress-track">
-                      <div
-                        className="final-budget-progress-fill"
-                        style={{ width: `${clampPercent(instructionSpendPercent)}%` }}
-                      />
-                    </div>
-
-                    <p className="subtle">
-                      {projection.plannedInstructionBudget > 0
-                        ? `${formatNumber(clampPercent(instructionSpendPercent))}% of the instruction budget used so far in ${currentYear}.`
-                        : "No instruction budget is planned yet."}
-                    </p>
-                  </div>
-
-                  <div className="final-budget-progress-card">
-                    <div className="section-heading">
-                      <div>
-                        <h3>Flying budget progress</h3>
-                        <p className="subtle">
-                          How much of your left-for-flying budget has already been used.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="final-budget-progress-grid">
-                      <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Left for flying</span>
-                        <strong>{formatCurrency(projection.plannedFlyingBudget)}</strong>
-                      </div>
-                      <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Used so far</span>
-                        <strong>
-                          {formatCurrency(
-                            projection.aircraftSpendThisYear +
-                              projection.otherExpenseSpendThisYear +
-                              projection.instructionOverspendThisYear,
-                          )}
-                        </strong>
-                      </div>
-                      <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Still available</span>
-                        <strong>{formatCurrency(projection.remainingFlyingBudget)}</strong>
-                      </div>
-                    </div>
-
-                    <div className="final-budget-progress-track">
-                      <div
-                        className="final-budget-progress-fill"
-                        style={{ width: `${clampPercent(flyingSpendPercent)}%` }}
-                      />
-                    </div>
-
-                    <p className="subtle">
-                      {projection.plannedFlyingBudget > 0
-                        ? projection.instructionOverspendThisYear > 0
-                          ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights, other expenses, and CFI payments beyond what was budgeted for CFI.`
-                          : `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights and other expenses.`
-                        : "No flyable budget remains after fixed dues and instruction."}
-                    </p>
-                  </div>
-                </div>
-              </>
-            </article>
-
-            <article className="card viz-budget-card">
-              <div className="section-heading">
-                <div>
                   <h3>{currentYear} Projection Snapshot</h3>
                   <p className="subtle">
                     Based on current lowest active rate effective today, your annual budget and
@@ -596,6 +458,144 @@ export const BudgetPage = () => {
                     : projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
                 </p>
               </section>
+            </article>
+
+            <article className="card viz-budget-card">
+              <div className="section-heading">
+                <div>
+                  <h3>Budget split</h3>
+                  <p className="subtle">Fixed dues, CFI, and airplane budget for the year.</p>
+                </div>
+              </div>
+              <>
+                <div className="viz-budget-layout">
+                  <div
+                    className="viz-budget-donut"
+                    style={{
+                      background: `conic-gradient(#d97706 0% ${fixedStop}%, #2563eb ${fixedStop}% ${instructionStop}%, #0f766e ${instructionStop}% 100%)`,
+                    }}
+                  >
+                    <div className="viz-budget-center">
+                      <strong>{formatCurrency(annualBudget)}</strong>
+                      <span>Total budget</span>
+                    </div>
+                  </div>
+                  <div className="viz-legend-stack">
+                    <div className="viz-legend-card">
+                      <span className="viz-dot gold" />
+                      <div>
+                        <p className="viz-kicker">Fixed dues</p>
+                        <strong>{formatCurrency(projection.fixedCosts)}</strong>
+                        <p className="subtle">{formatNumber(fixedPercent)}% of annual budget</p>
+                      </div>
+                    </div>
+                    <div className="viz-legend-card">
+                      <span className="viz-dot blue" />
+                      <div>
+                        <p className="viz-kicker">CFI</p>
+                        <strong>{formatCurrency(projection.plannedInstructionBudget)}</strong>
+                        <p className="subtle">{formatNumber(instructionPercent)}% of annual budget</p>
+                      </div>
+                    </div>
+                    <div className="viz-legend-card">
+                      <span className="viz-dot teal" />
+                      <div>
+                        <p className="viz-kicker">Left for flying</p>
+                        <strong>{formatCurrency(projection.plannedFlyingBudget)}</strong>
+                        <p className="subtle">{formatNumber(flyingPercent)}% of annual budget</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="budget-progress-stack">
+                  <div className="final-budget-progress-card">
+                    <div className="section-heading">
+                      <div>
+                        <h3>Instruction budget progress</h3>
+                        <p className="subtle">
+                          How much of your planned instruction budget has already been used.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="final-budget-progress-grid">
+                      <div className="final-budget-progress-metric">
+                        <span className="viz-kicker">Instruction</span>
+                        <strong>{formatCurrency(projection.plannedInstructionBudget)}</strong>
+                      </div>
+                      <div className="final-budget-progress-metric">
+                        <span className="viz-kicker">Spent on instruction YTD</span>
+                        <strong>{formatCurrency(projection.instructionSpendThisYear)}</strong>
+                      </div>
+                      <div className="final-budget-progress-metric">
+                        <span className="viz-kicker">Still available</span>
+                        <strong>{formatCurrency(projection.remainingInstructionBudget)}</strong>
+                      </div>
+                    </div>
+
+                    <div className="final-budget-progress-track">
+                      <div
+                        className="final-budget-progress-fill"
+                        style={{ width: `${clampPercent(instructionSpendPercent)}%` }}
+                      />
+                    </div>
+
+                    <p className="subtle">
+                      {projection.plannedInstructionBudget > 0
+                        ? `${formatNumber(clampPercent(instructionSpendPercent))}% of the instruction budget used so far in ${currentYear}.`
+                        : "No instruction budget is planned yet."}
+                    </p>
+                  </div>
+
+                  <div className="final-budget-progress-card">
+                    <div className="section-heading">
+                      <div>
+                        <h3>Flying budget progress</h3>
+                        <p className="subtle">
+                          How much of your left-for-flying budget has already been used.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="final-budget-progress-grid">
+                      <div className="final-budget-progress-metric">
+                        <span className="viz-kicker">Left for flying</span>
+                        <strong>{formatCurrency(projection.plannedFlyingBudget)}</strong>
+                      </div>
+                      <div className="final-budget-progress-metric">
+                        <span className="viz-kicker">Used so far</span>
+                        <strong>
+                          {formatCurrency(
+                            projection.aircraftSpendThisYear +
+                              projection.otherExpenseSpendThisYear +
+                              projection.instructionOverspendThisYear,
+                          )}
+                        </strong>
+                      </div>
+                      <div className="final-budget-progress-metric">
+                        <span className="viz-kicker">Still available</span>
+                        <strong>{formatCurrency(projection.remainingFlyingBudget)}</strong>
+                      </div>
+                    </div>
+
+                    <div className="final-budget-progress-track">
+                      <div
+                        className="final-budget-progress-fill"
+                        style={{ width: `${clampPercent(flyingSpendPercent)}%` }}
+                      />
+                    </div>
+
+                    <p className="subtle">
+                      {projection.plannedFlyingBudget > 0
+                        ? projection.instructionOverspendThisYear > 0
+                          ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights, other expenses, and CFI payments beyond what was budgeted for CFI.`
+                          : `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights and other expenses.`
+                        : "No flyable budget remains after fixed dues and instruction."}
+                    </p>
+                  </div>
+                </div>
+              </>
             </article>
           </section>
         </>
