@@ -41,6 +41,7 @@ The app should support common aviation cost concepts such as:
 - For larger multi-step work, write or update `PLANS.md`.
 - Before considering a task complete, verify the app builds and passes configured checks.
 - Do not make unrelated refactors unless they are necessary to complete the task.
+- In Codex desktop on Windows, `npm run dev` may fail inside the sandbox with Vite/esbuild `spawn EPERM`; if that happens, start the dev server with an escalated detached command from the repo root, such as `cmd /c start "HobbsTab Dev" /D "%CD%" "C:\Program Files\nodejs\npm.cmd" run dev -- --host 127.0.0.1`, and then verify port `5173` is listening.
 
 ## UX Priorities
 - Data entry should be fast and simple.

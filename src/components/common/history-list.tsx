@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import type { Plane } from "../../domain/clubs/club-types";
@@ -12,6 +13,8 @@ interface HistoryListProps {
   onDeleteEntry?: (entryId: string) => Promise<void>;
   title?: string;
   subtitle?: string;
+  headerActions?: ReactNode;
+  topContent?: ReactNode;
 }
 
 export const HistoryList = ({
@@ -20,15 +23,21 @@ export const HistoryList = ({
   onDeleteEntry,
   title = "History",
   subtitle = "Stored entries plus monthly dues.",
+  headerActions,
+  topContent,
 }: HistoryListProps) => {
   const planesById = new Map(planes.map((plane) => [plane.id, plane.name]));
 
   return (
     <section className="card">
       <div className="section-heading">
-        <h2>{title}</h2>
-        <p className="subtle">{subtitle}</p>
+        <div>
+          <h2>{title}</h2>
+          <p className="subtle">{subtitle}</p>
+        </div>
+        {headerActions}
       </div>
+      {topContent}
       {rows.length === 0 ? (
         <p className="subtle">No entries yet.</p>
       ) : (

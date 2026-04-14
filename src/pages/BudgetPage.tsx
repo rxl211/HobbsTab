@@ -87,7 +87,11 @@ export const BudgetPage = () => {
       : 0;
   const flyingSpendPercent =
     projection.plannedFlyingBudget > 0
-      ? (projection.aircraftSpendThisYear / projection.plannedFlyingBudget) * 100
+      ? ((projection.aircraftSpendThisYear +
+          projection.otherExpenseSpendThisYear +
+          projection.instructionOverspendThisYear) /
+          projection.plannedFlyingBudget) *
+        100
       : 0;
   const completionPercent = projection.projectedFlightsCompletionPercent ?? 0;
   const budgetAvailable = projection.annualBudget !== undefined;
@@ -100,9 +104,7 @@ export const BudgetPage = () => {
     ? undefined
     : projection.projectedFlights !== undefined && projection.projectedActualHours !== undefined
       ? {
-          title: `At current rates, your budget supports about ${formatNumber(
-            projection.projectedFlights,
-          )} flights this year.`,
+          title: `Your budget supports about ${formatNumber(projection.projectedFlights)} flights this year`,
           detail:
             "Use the breakdown below to see how dues, instruction, current aircraft rates, and your past flights shape that forecast.",
         }
@@ -300,6 +302,167 @@ export const BudgetPage = () => {
             <article className="card viz-budget-card">
               <div className="section-heading">
                 <div>
+                  <h3>{currentYear} Projection Snapshot</h3>
+                  <p className="subtle">
+                    Based on current lowest active rate effective today, your annual budget and
+                    more.
+                  </p>
+                </div>
+              </div>
+              {projection.cheapestPlane ? (
+                <div className="viz-plane-callout">
+                  <div>
+                    <p className="viz-kicker">Best current rate</p>
+                    <h3>{projection.cheapestPlane.planeName}</h3>
+                    <p className="subtle">{projection.cheapestPlane.clubName}</p>
+                  </div>
+                  <div className="viz-plane-pill">
+                    {formatCurrency(projection.cheapestPlane.hourlyRate)}/
+                    {projection.cheapestPlane.billingTimeType} hr
+                  </div>
+                </div>
+              ) : (
+                <p className="subtle">No active plane/rate is available yet.</p>
+              )}
+
+              <div className="final-budget-primary-stat">
+                <span className="viz-kicker">Projected flights</span>
+                <strong className="final-budget-primary-value">
+                  {projection.projectedFlights !== undefined
+                    ? formatNumber(projection.projectedFlights)
+                    : "Unavailable"}
+                </strong>
+                {projection.projectedActualHours !== undefined ? (
+                  <p className="subtle">
+                    {formatNumber(projection.projectedActualHours)} projected flight hours.
+                  </p>
+                ) : projection.projectedFlightsUnavailableReason ===
+                  "No active plane/rate is available yet." ? (
+                  <p className="subtle">
+                    No active plane/rate is available yet. <Link to="/clubs">Create Club</Link>
+                  </p>
+                ) : (
+                  <p className="subtle">
+                    {projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
+                  </p>
+                )}
+              </div>
+
+              <details className="final-budget-details">
+                <summary>How was projected flights calculated?</summary>
+                <div className="final-budget-details-body">
+                  {projection.projectedFlights !== undefined ? (
+                    <>
+                      <p className="subtle">
+                        Started with an annual budget of{" "}
+                        {formatCurrency(projection.annualBudget ?? 0)}, then subtracted{" "}
+                        {formatCurrency(projection.fixedCosts)} in fixed dues and{" "}
+                        {formatCurrency(projection.plannedInstructionBudget)} reserved for
+                        instruction.
+                      </p>
+                      <p className="subtle">
+                        {projection.instructionBudgetSource === "override"
+                          ? "That instruction amount comes from your custom annual CFI budget."
+                          : `That instruction amount uses the median instructor spend from ${instructionYearsLabel}, including zero-spend years in that window.`}
+                      </p>
+                      <p className="subtle">
+                        That leaves {formatCurrency(projection.plannedFlyingBudget)} in annual
+                        flying budget at the cheapest current rate of{" "}
+                        {formatCurrency(projection.cheapestPlane?.hourlyRate ?? 0)}/
+                        {projection.cheapestPlane?.billingTimeType} hr.
+                      </p>
+                      <p className="subtle">
+                        That produces {formatHours(projection.projectedBillableHours ?? 0)} of
+                        billable time.
+                      </p>
+                      <p className="subtle">
+                        {projection.cheapestPlane?.billingTimeType === "hobbs"
+                          ? `Because this plane bills by hobbs, billable time stays ${formatHours(
+                              projection.projectedActualHours ?? 0,
+                            )} of actual flight time.`
+                          : `Converted that to ${formatHours(
+                              projection.projectedActualHours ?? 0,
+                            )} of actual flight time using a median hobbs/tach factor of ${formatNumber(
+                              projection.tachToHobbsRatio ?? 0,
+                            )}x from ${formatNumber(projection.tachFlightSampleCount)} prior tach-billed flights.`}
+                      </p>
+                      <p className="subtle">
+                        Then divided by your median flight duration of{" "}
+                        {formatHours(projection.typicalFlightHours ?? 0)}
+                        {projection.isDefaultTypicalFlightHours
+                          ? " (a placeholder because there are no previously recorded flights)."
+                          : ` from ${formatNumber(projection.flightDurationSampleCount)} logged flights.`}{" "}
+                        That reaches {formatNumber(projection.projectedFlights)} projected flights.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="subtle">
+                      {projection.projectedFlightsUnavailableReason ??
+                        "Projected flights could not be calculated yet."}
+                    </p>
+                  )}
+                </div>
+              </details>
+
+              <section className="final-budget-progress-card">
+                <div className="section-heading">
+                  <div>
+                    <h3>Flight progress</h3>
+                    <p className="subtle">Progress toward your projected total flights for the year.</p>
+                  </div>
+                  <div className="final-budget-progress-side">
+                    <span className="viz-kicker">Percent complete</span>
+                    <strong>
+                      {projection.projectedFlightsCompletionPercent !== undefined
+                        ? `${formatNumber(projection.projectedFlightsCompletionPercent)}%`
+                        : "Unavailable"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="final-budget-progress-grid">
+                  <div className="final-budget-progress-metric">
+                    <span className="viz-kicker">Projected total</span>
+                    <strong>
+                      {projection.projectedFlights !== undefined
+                        ? formatNumber(projection.projectedFlights)
+                        : "Unavailable"}
+                    </strong>
+                  </div>
+                  <div className="final-budget-progress-metric">
+                    <span className="viz-kicker">Completed YTD</span>
+                    <strong>{formatNumber(projection.flightsCompletedThisYear)}</strong>
+                  </div>
+                  <div className="final-budget-progress-metric">
+                    <span className="viz-kicker">Remaining</span>
+                    <strong>
+                      {projection.flightsRemainingThisYear !== undefined
+                        ? formatNumber(projection.flightsRemainingThisYear)
+                        : "Unavailable"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="final-budget-progress-track">
+                  <div
+                    className="final-budget-progress-fill"
+                    style={{ width: `${clampPercent(completionPercent)}%` }}
+                  />
+                </div>
+
+                <p className="subtle">
+                  {projection.projectedFlights !== undefined
+                    ? `${formatNumber(projection.flightsCompletedThisYear)} of ${formatNumber(
+                        projection.projectedFlights,
+                      )} projected flights completed in ${currentYear}.`
+                    : projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
+                </p>
+              </section>
+            </article>
+
+            <article className="card viz-budget-card">
+              <div className="section-heading">
+                <div>
                   <h3>Budget split</h3>
                   <p className="subtle">Fixed dues, CFI, and airplane budget for the year.</p>
                 </div>
@@ -401,8 +564,14 @@ export const BudgetPage = () => {
                         <strong>{formatCurrency(projection.plannedFlyingBudget)}</strong>
                       </div>
                       <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Spent on flights YTD</span>
-                        <strong>{formatCurrency(projection.aircraftSpendThisYear)}</strong>
+                        <span className="viz-kicker">Used so far</span>
+                        <strong>
+                          {formatCurrency(
+                            projection.aircraftSpendThisYear +
+                              projection.otherExpenseSpendThisYear +
+                              projection.instructionOverspendThisYear,
+                          )}
+                        </strong>
                       </div>
                       <div className="final-budget-progress-metric">
                         <span className="viz-kicker">Still available</span>
@@ -419,172 +588,14 @@ export const BudgetPage = () => {
 
                     <p className="subtle">
                       {projection.plannedFlyingBudget > 0
-                        ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}.`
+                        ? projection.instructionOverspendThisYear > 0
+                          ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights, other expenses, and CFI payments beyond what was budgeted for CFI.`
+                          : `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights and other expenses.`
                         : "No flyable budget remains after fixed dues and instruction."}
                     </p>
                   </div>
                 </div>
               </>
-            </article>
-
-            <article className="card viz-budget-card">
-              <div className="section-heading">
-                <div>
-                  <h3>Cheapest plane snapshot</h3>
-                  <p className="subtle">Current lowest active rate effective today.</p>
-                </div>
-              </div>
-              {projection.cheapestPlane ? (
-                <div className="viz-plane-callout">
-                  <div>
-                    <p className="viz-kicker">Best current rate</p>
-                    <h3>{projection.cheapestPlane.planeName}</h3>
-                    <p className="subtle">{projection.cheapestPlane.clubName}</p>
-                  </div>
-                  <div className="viz-plane-pill">
-                    {formatCurrency(projection.cheapestPlane.hourlyRate)}/
-                    {projection.cheapestPlane.billingTimeType} hr
-                  </div>
-                </div>
-              ) : (
-                <p className="subtle">No active plane/rate is available yet.</p>
-              )}
-
-              <div className="final-budget-primary-stat">
-                <span className="viz-kicker">Projected flights</span>
-                <strong className="final-budget-primary-value">
-                  {projection.projectedFlights !== undefined
-                    ? formatNumber(projection.projectedFlights)
-                    : "Unavailable"}
-                </strong>
-                {projection.projectedActualHours !== undefined ? (
-                  <p className="subtle">
-                    {formatHours(projection.projectedActualHours)} projected flight hours.
-                  </p>
-                ) : projection.projectedFlightsUnavailableReason ===
-                  "No active plane/rate is available yet." ? (
-                  <p className="subtle">
-                    No active plane/rate is available yet. <Link to="/clubs">Create Club</Link>
-                  </p>
-                ) : (
-                  <p className="subtle">
-                    {projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
-                  </p>
-                )}
-              </div>
-
-              <details className="final-budget-details">
-                <summary>How was projected flights calculated?</summary>
-                <div className="final-budget-details-body">
-                  {projection.projectedFlights !== undefined ? (
-                    <>
-                      <p className="subtle">
-                        Started with an annual budget of{" "}
-                        {formatCurrency(projection.annualBudget ?? 0)}, then subtracted{" "}
-                        {formatCurrency(projection.fixedCosts)} in fixed dues and{" "}
-                        {formatCurrency(projection.plannedInstructionBudget)} reserved for
-                        instruction.
-                      </p>
-                      <p className="subtle">
-                        {projection.instructionBudgetSource === "override"
-                          ? "That instruction amount comes from your custom annual CFI budget."
-                          : `That instruction amount uses the median instructor spend from ${instructionYearsLabel}, including zero-spend years in that window.`}
-                      </p>
-                      <p className="subtle">
-                        Then subtracted {formatCurrency(projection.aircraftSpendThisYear)} already
-                        spent on airplane time this year, leaving{" "}
-                        {formatCurrency(projection.remainingFlyingBudget)} for future flying at the
-                        cheapest current rate of{" "}
-                        {formatCurrency(projection.cheapestPlane?.hourlyRate ?? 0)}/
-                        {projection.cheapestPlane?.billingTimeType} hr.
-                      </p>
-                      <p className="subtle">
-                        That produces {formatHours(projection.projectedBillableHours ?? 0)} of
-                        billable time.
-                      </p>
-                      <p className="subtle">
-                        {projection.cheapestPlane?.billingTimeType === "hobbs"
-                          ? `Because this plane bills by hobbs, billable time stays ${formatHours(
-                              projection.projectedActualHours ?? 0,
-                            )} of actual flight time.`
-                          : `Converted that to ${formatHours(
-                              projection.projectedActualHours ?? 0,
-                            )} of actual flight time using a median hobbs/tach factor of ${formatNumber(
-                              projection.tachToHobbsRatio ?? 0,
-                            )}x from ${formatNumber(projection.tachFlightSampleCount)} prior tach-billed flights.`}
-                      </p>
-                      <p className="subtle">
-                        Then divided by your median flight duration of{" "}
-                        {formatHours(projection.typicalFlightHours ?? 0)}
-                        {projection.isDefaultTypicalFlightHours
-                          ? " (a placeholder because there are no previously recorded flights)."
-                          : ` from ${formatNumber(projection.flightDurationSampleCount)} logged flights.`}{" "}
-                        That reaches {formatNumber(projection.projectedFlights)} projected flights.
-                      </p>
-                    </>
-                  ) : (
-                    <p className="subtle">
-                      {projection.projectedFlightsUnavailableReason ??
-                        "Projected flights could not be calculated yet."}
-                    </p>
-                  )}
-                </div>
-              </details>
-
-              <section className="final-budget-progress-card">
-                <div className="section-heading">
-                  <div>
-                    <h3>Flight progress</h3>
-                    <p className="subtle">Progress toward your projected total flights for the year.</p>
-                  </div>
-                  <div className="final-budget-progress-side">
-                    <span className="viz-kicker">Percent complete</span>
-                    <strong>
-                      {projection.projectedFlightsCompletionPercent !== undefined
-                        ? `${formatNumber(projection.projectedFlightsCompletionPercent)}%`
-                        : "Unavailable"}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="final-budget-progress-grid">
-                  <div className="final-budget-progress-metric">
-                    <span className="viz-kicker">Projected total</span>
-                    <strong>
-                      {projection.projectedFlights !== undefined
-                        ? formatNumber(projection.projectedFlights)
-                        : "Unavailable"}
-                    </strong>
-                  </div>
-                  <div className="final-budget-progress-metric">
-                    <span className="viz-kicker">Completed YTD</span>
-                    <strong>{formatNumber(projection.flightsCompletedThisYear)}</strong>
-                  </div>
-                  <div className="final-budget-progress-metric">
-                    <span className="viz-kicker">Remaining</span>
-                    <strong>
-                      {projection.flightsRemainingThisYear !== undefined
-                        ? formatNumber(projection.flightsRemainingThisYear)
-                        : "Unavailable"}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="final-budget-progress-track">
-                  <div
-                    className="final-budget-progress-fill"
-                    style={{ width: `${clampPercent(completionPercent)}%` }}
-                  />
-                </div>
-
-                <p className="subtle">
-                  {projection.projectedFlights !== undefined
-                    ? `${formatNumber(projection.flightsCompletedThisYear)} of ${formatNumber(
-                        projection.projectedFlights,
-                      )} projected flights completed in ${currentYear}.`
-                    : projection.projectedFlightsUnavailableReason ?? "Projected flights unavailable."}
-                </p>
-              </section>
             </article>
           </section>
         </>

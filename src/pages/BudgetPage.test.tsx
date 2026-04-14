@@ -18,7 +18,7 @@ describe("BudgetPage", () => {
 
     mockUseAppData.mockReturnValue({
       budgetSetting: { key: "annualBudget", amount: 5000 },
-      instructionBudgetOverrideSetting: undefined,
+      instructionBudgetOverrideSetting: { key: "instructionBudget", amount: 100 },
       clubs: [{ id: "club-1", name: "Alpha", active: true }],
       clubDuesPeriods: [
         { id: "dues-1", clubId: "club-1", effectiveFrom: "2026-01-01", monthlyDues: 100 },
@@ -60,7 +60,14 @@ describe("BudgetPage", () => {
           billingTimeTypeUsed: "tach",
           hourlyRateUsed: 160,
           aircraftCost: 208,
-          instructorCost: 75,
+          instructorCost: 187.5,
+        },
+        {
+          id: "expense-1",
+          kind: "expense",
+          date: "2026-03-05",
+          description: "Supplies",
+          amount: 50,
         },
       ],
       loading: false,
@@ -79,9 +86,12 @@ describe("BudgetPage", () => {
     expect(screen.getByText("Budget split")).toBeInTheDocument();
     expect(screen.getByText("Instruction budget progress")).toBeInTheDocument();
     expect(screen.getByText("Flying budget progress")).toBeInTheDocument();
+    expect(screen.getByText("Used so far")).toBeInTheDocument();
+    expect(screen.getByText("$345.50")).toBeInTheDocument();
+    expect(screen.getByText("$3,354.50")).toBeInTheDocument();
     expect(screen.getByText("Projected flights")).toBeInTheDocument();
     expect(screen.getByText("Flight progress")).toBeInTheDocument();
-    expect(screen.getByText(/At current rates, your budget supports about/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your budget supports about/i)).toBeInTheDocument();
     expect(
       screen.getByText(
         /Use the breakdown below to see how dues, instruction, current aircraft rates, and your past flights shape that forecast\./i,
@@ -96,7 +106,7 @@ describe("BudgetPage", () => {
 
     expect(updateAnnualBudget).toHaveBeenCalledWith(6200);
 
-    fireEvent.click(screen.getByRole("button", { name: "Customize CFI" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit CFI" }));
     fireEvent.change(screen.getByLabelText("Annual instruction budget"), {
       target: { value: "450" },
     });
@@ -106,6 +116,13 @@ describe("BudgetPage", () => {
 
     fireEvent.click(screen.getByText("How was projected flights calculated?"));
     expect(screen.getByText(/reserved for instruction/i)).toBeInTheDocument();
+    expect(screen.getByText(/That leaves \$3,700\.00 in annual flying budget/i)).toBeInTheDocument();
+    expect(screen.queryByText(/already spent on airplane time this year/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /including flights, other expenses, and CFI payments beyond what was budgeted for CFI/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps the annual budget editor closed after loading saved data on refresh", async () => {
@@ -155,7 +172,7 @@ describe("BudgetPage", () => {
     rerender(<BudgetPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Edit budget" })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Edit budget" })[0]).toBeInTheDocument();
     });
 
     expect(screen.queryByLabelText("Annual budget")).not.toBeInTheDocument();
@@ -201,5 +218,65 @@ describe("BudgetPage", () => {
       "href",
       "/clubs",
     );
+  });
+
+  it("uses simpler flying budget copy when there is no instruction overspend", () => {
+    const updateAnnualBudget = vi.fn().mockResolvedValue(undefined);
+    const updateInstructionBudgetOverride = vi.fn().mockResolvedValue(undefined);
+    const clearInstructionBudgetOverride = vi.fn().mockResolvedValue(undefined);
+
+    mockUseAppData.mockReturnValue({
+      budgetSetting: { key: "annualBudget", amount: 5000 },
+      instructionBudgetOverrideSetting: undefined,
+      clubs: [{ id: "club-1", name: "Alpha", active: true }],
+      clubDuesPeriods: [
+        { id: "dues-1", clubId: "club-1", effectiveFrom: "2026-01-01", monthlyDues: 100 },
+      ],
+      planes: [{ id: "plane-1", clubId: "club-1", name: "C172", active: true }],
+      planeRatePeriods: [
+        {
+          id: "rate-1",
+          planeId: "plane-1",
+          effectiveFrom: "2026-01-01",
+          billingTimeType: "tach",
+          hourlyRate: 160,
+        },
+      ],
+      entries: [
+        {
+          id: "flight-1",
+          kind: "flight",
+          date: "2026-02-10",
+          clubId: "club-1",
+          planeId: "plane-1",
+          purpose: "training",
+          flightTime: 1.5,
+          billedTime: 1.3,
+          billingTimeTypeUsed: "tach",
+          hourlyRateUsed: 160,
+          aircraftCost: 208,
+          instructorCost: 75,
+        },
+        {
+          id: "expense-1",
+          kind: "expense",
+          date: "2026-03-05",
+          description: "Supplies",
+          amount: 50,
+        },
+      ],
+      loading: false,
+      updateAnnualBudget,
+      updateInstructionBudgetOverride,
+      clearInstructionBudgetOverride,
+    });
+
+    render(
+      <MemoryRouter>
+        <BudgetPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByText(/including flights and other expenses\./i).length).toBeGreaterThan(0);
   });
 });

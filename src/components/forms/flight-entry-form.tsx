@@ -8,6 +8,7 @@ import type {
   FlightEntryInput,
   FlightPurpose,
 } from "../../domain/entries/entry-types";
+import { formatCurrency } from "../../lib/formatters";
 
 interface FlightEntryFormProps {
   clubs: Club[];
@@ -33,6 +34,15 @@ const getStoredSelection = (key: string) => {
   }
 
   return window.localStorage.getItem(key) ?? "";
+};
+
+const parseAmount = (value: string) => {
+  if (!value.trim()) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 };
 
 export const FlightEntryForm = ({
@@ -80,6 +90,19 @@ export const FlightEntryForm = ({
   const billedTimeType = applicableRate?.billingTimeType ?? "hobbs";
   const requiresInstructor = purpose === "training" || purpose === "checkFlight";
   const billedTimeLabel = billedTimeType === "tach" ? "Billed Tach Time" : "Billed Hobbs Time";
+  const effectiveHourlyRate = clubId ? applicableRate?.hourlyRate : parseAmount(nonClubHourlyRate);
+  const previewBilledTime =
+    parseAmount(billedTime) ?? (billedTimeType === "hobbs" ? parseAmount(flightTime) : undefined);
+  const previewAircraftCost =
+    effectiveHourlyRate !== undefined && previewBilledTime !== undefined
+      ? Number((effectiveHourlyRate * previewBilledTime).toFixed(2))
+      : 0;
+  const previewInstructorCost = requiresInstructor ? parseAmount(instructorCost) ?? 0 : undefined;
+  const spendPreview = {
+    aircraftCost: previewAircraftCost,
+    instructorCost: previewInstructorCost,
+    total: Number((previewAircraftCost + (previewInstructorCost ?? 0)).toFixed(2)),
+  };
 
   useEffect(() => {
     if (isEditing || initialValue) {
@@ -309,11 +332,35 @@ export const FlightEntryForm = ({
         />
       </label>
 
-      {error ? <p className="form-error">{error}</p> : null}
+      <section className="flight-spend-preview" aria-label="Spend preview">
+        <div className="flight-spend-preview-header">
+          <div>
+            <h3>Total</h3>
+          </div>
+          <strong className="flight-spend-preview-total">
+            {formatCurrency(spendPreview.total)}
+          </strong>
+        </div>
 
-      <button type="submit" className="primary-button" disabled={saving}>
-        {saving ? "Saving..." : submitLabel}
-      </button>
+        <div className="flight-spend-preview-grid">
+          <div className="flight-spend-preview-metric">
+            <span className="viz-kicker">Airplane</span>
+            <strong>{formatCurrency(spendPreview.aircraftCost)}</strong>
+          </div>
+          {requiresInstructor ? (
+            <div className="flight-spend-preview-metric">
+              <span className="viz-kicker">Instructor</span>
+              <strong>{formatCurrency(spendPreview.instructorCost ?? 0)}</strong>
+            </div>
+          ) : null}
+        </div>
+
+        <button type="submit" className="primary-button flight-spend-preview-submit" disabled={saving}>
+          {saving ? "Saving..." : submitLabel}
+        </button>
+      </section>
+
+      {error ? <p className="form-error">{error}</p> : null}
     </form>
   );
 };
