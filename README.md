@@ -4,7 +4,7 @@ HobbsTab is a local-first web app for tracking what you spend on general aviatio
 
 It is built for the common case of one person tracking club dues, flight costs, instruction costs, and related aviation expenses without having to maintain a spreadsheet by hand.
 
-It does not have user accounts and stores all data locally, but with easy database export/import.
+It does not have user accounts and stores all data locally, with easy database export/import via UI.
 
 ## Current Features
 
