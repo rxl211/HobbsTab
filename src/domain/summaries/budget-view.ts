@@ -1,6 +1,6 @@
 import type { Club, ClubDuesPeriod, Plane, PlaneRatePeriod } from "../clubs/club-types";
 import { sortDuesPeriods } from "../clubs/club-rules";
-import type { EntryRecord, FlightEntry } from "../entries/entry-types";
+import type { EntryRecord, ExpenseEntry, FlightEntry } from "../entries/entry-types";
 import { monthKeysBetween } from "../shared/dates";
 
 const roundCurrency = (value: number) => Number(value.toFixed(2));
@@ -27,6 +27,7 @@ const median = (values: number[]) => {
 };
 
 const isFlightEntry = (entry: EntryRecord): entry is FlightEntry => entry.kind === "flight";
+const isExpenseEntry = (entry: EntryRecord): entry is ExpenseEntry => entry.kind === "expense";
 
 const currentYearWindow = (now: Date) => {
   const year = now.getFullYear();
@@ -109,7 +110,9 @@ export interface BudgetProjection {
   instructionBudgetYearsUsed: number[];
   instructionYearlyTotals: InstructionBudgetYearTotal[];
   aircraftSpendThisYear: number;
+  otherExpenseSpendThisYear: number;
   instructionSpendThisYear: number;
+  instructionOverspendThisYear: number;
   remainingInstructionBudget: number;
   remainingFlyingBudget: number;
   cheapestPlane?: BudgetPlaneOption;
@@ -152,7 +155,13 @@ export const buildBudgetProjection = ({
     instructionBudgetOverride === undefined ? undefined : roundCurrency(instructionBudgetOverride);
   const yearPrefix = `${now.getFullYear()}-`;
   const flightEntries = entries.filter(isFlightEntry);
+  const expenseEntriesThisYear = entries.filter(
+    (entry): entry is ExpenseEntry => isExpenseEntry(entry) && entry.date.startsWith(yearPrefix),
+  );
   const flightsThisYear = flightEntries.filter((entry) => entry.date.startsWith(yearPrefix));
+  const expenseSpendThisYear = roundCurrency(
+    expenseEntriesThisYear.reduce((total, entry) => total + entry.amount, 0),
+  );
   const aircraftSpendThisYear = roundCurrency(
     flightsThisYear.reduce((total, entry) => total + entry.aircraftCost, 0),
   );
@@ -175,6 +184,9 @@ export const buildBudgetProjection = ({
     instructionBudgetOverrideValue ?? autoInstructionBudget,
   );
   const instructionBudgetSource = instructionBudgetOverrideValue === undefined ? "auto" : "override";
+  const instructionOverspendThisYear = roundCurrency(
+    Math.max(instructionSpendThisYear - plannedInstructionBudget, 0),
+  );
 
   const rawPlannedFlyingBudget =
     annualBudgetValue === undefined
@@ -185,7 +197,12 @@ export const buildBudgetProjection = ({
   const rawRemainingFlyingBudget =
     annualBudgetValue === undefined
       ? 0
-      : annualBudgetValue - fixedCosts - plannedInstructionBudget - aircraftSpendThisYear;
+      : annualBudgetValue -
+        fixedCosts -
+        plannedInstructionBudget -
+        aircraftSpendThisYear -
+        expenseSpendThisYear -
+        instructionOverspendThisYear;
   const remainingFlyingBudget = roundCurrency(Math.max(rawRemainingFlyingBudget, 0));
   const remainingInstructionBudget = roundCurrency(
     Math.max(plannedInstructionBudget - instructionSpendThisYear, 0),
@@ -284,7 +301,9 @@ export const buildBudgetProjection = ({
     instructionBudgetYearsUsed,
     instructionYearlyTotals,
     aircraftSpendThisYear,
+    otherExpenseSpendThisYear: expenseSpendThisYear,
     instructionSpendThisYear,
+    instructionOverspendThisYear,
     remainingInstructionBudget,
     remainingFlyingBudget,
     cheapestPlane,

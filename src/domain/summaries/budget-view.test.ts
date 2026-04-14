@@ -105,6 +105,13 @@ const entries: EntryRecord[] = [
     hourlyRateUsed: 170,
     aircraftCost: 306,
   },
+  {
+    id: "expense-1",
+    kind: "expense",
+    date: "2026-03-20",
+    description: "Headset battery",
+    amount: 45,
+  },
 ];
 
 describe("budget view", () => {
@@ -130,9 +137,11 @@ describe("budget view", () => {
     expect(projection.plannedInstructionBudget).toBe(300);
     expect(projection.plannedFlyingBudget).toBe(3000);
     expect(projection.instructionSpendThisYear).toBe(80);
+    expect(projection.instructionOverspendThisYear).toBe(0);
     expect(projection.aircraftSpendThisYear).toBe(786);
+    expect(projection.otherExpenseSpendThisYear).toBe(45);
     expect(projection.remainingInstructionBudget).toBe(220);
-    expect(projection.remainingFlyingBudget).toBe(2214);
+    expect(projection.remainingFlyingBudget).toBe(2169);
     expect(projection.cheapestPlane?.planeId).toBe("plane-2");
     expect(projection.cheapestPlane?.hourlyRate).toBe(150);
     expect(projection.projectedBillableHours).toBe(20);
@@ -159,8 +168,10 @@ describe("budget view", () => {
     expect(projection.instructionBudgetSource).toBe("override");
     expect(projection.plannedInstructionBudget).toBe(900);
     expect(projection.plannedFlyingBudget).toBe(0);
+    expect(projection.instructionOverspendThisYear).toBe(0);
     expect(projection.remainingFlyingBudget).toBe(0);
     expect(projection.aircraftSpendThisYear).toBe(786);
+    expect(projection.otherExpenseSpendThisYear).toBe(45);
     expect(projection.projectedBillableHours).toBe(0);
     expect(projection.tachToHobbsRatio).toBe(1.2);
     expect(projection.projectedActualHours).toBe(0);
@@ -182,8 +193,46 @@ describe("budget view", () => {
     expect(projection.typicalFlightHours).toBe(1.3);
     expect(projection.isDefaultTypicalFlightHours).toBe(true);
     expect(projection.aircraftSpendThisYear).toBe(0);
+    expect(projection.otherExpenseSpendThisYear).toBe(0);
     expect(projection.instructionSpendThisYear).toBe(0);
+    expect(projection.instructionOverspendThisYear).toBe(0);
     expect(projection.projectedFlights).toBe(16);
     expect(projection.flightsRemainingThisYear).toBe(16);
+  });
+
+  it("lets instruction overspend reduce still-available flying budget", () => {
+    const projection = buildBudgetProjection({
+      annualBudget: 5000,
+      instructionBudgetOverride: 100,
+      clubs,
+      duesPeriods,
+      planes,
+      planeRatePeriods,
+      entries: [
+        ...entries,
+        {
+          id: "flight-6",
+          kind: "flight",
+          date: "2026-04-10",
+          clubId: "club-1",
+          planeId: "plane-1",
+          purpose: "training",
+          flightTime: 1.1,
+          billedTime: 1,
+          billingTimeTypeUsed: "tach",
+          hourlyRateUsed: 160,
+          aircraftCost: 160,
+          instructorCost: 107.5,
+        },
+      ],
+      now: new Date("2026-04-13T12:00:00"),
+    });
+
+    expect(projection.plannedInstructionBudget).toBe(100);
+    expect(projection.instructionSpendThisYear).toBe(187.5);
+    expect(projection.instructionOverspendThisYear).toBe(87.5);
+    expect(projection.remainingInstructionBudget).toBe(0);
+    expect(projection.plannedFlyingBudget).toBe(3200);
+    expect(projection.remainingFlyingBudget).toBe(2121.5);
   });
 });

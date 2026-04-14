@@ -87,7 +87,11 @@ export const BudgetPage = () => {
       : 0;
   const flyingSpendPercent =
     projection.plannedFlyingBudget > 0
-      ? (projection.aircraftSpendThisYear / projection.plannedFlyingBudget) * 100
+      ? ((projection.aircraftSpendThisYear +
+          projection.otherExpenseSpendThisYear +
+          projection.instructionOverspendThisYear) /
+          projection.plannedFlyingBudget) *
+        100
       : 0;
   const completionPercent = projection.projectedFlightsCompletionPercent ?? 0;
   const budgetAvailable = projection.annualBudget !== undefined;
@@ -399,8 +403,14 @@ export const BudgetPage = () => {
                         <strong>{formatCurrency(projection.plannedFlyingBudget)}</strong>
                       </div>
                       <div className="final-budget-progress-metric">
-                        <span className="viz-kicker">Spent on flights YTD</span>
-                        <strong>{formatCurrency(projection.aircraftSpendThisYear)}</strong>
+                        <span className="viz-kicker">Used so far</span>
+                        <strong>
+                          {formatCurrency(
+                            projection.aircraftSpendThisYear +
+                              projection.otherExpenseSpendThisYear +
+                              projection.instructionOverspendThisYear,
+                          )}
+                        </strong>
                       </div>
                       <div className="final-budget-progress-metric">
                         <span className="viz-kicker">Still available</span>
@@ -417,7 +427,9 @@ export const BudgetPage = () => {
 
                     <p className="subtle">
                       {projection.plannedFlyingBudget > 0
-                        ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}.`
+                        ? projection.instructionOverspendThisYear > 0
+                          ? `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights, other expenses, and CFI payments beyond what was budgeted for CFI.`
+                          : `${formatNumber(clampPercent(flyingSpendPercent))}% of the left-for-flying budget used so far in ${currentYear}, including flights and other expenses.`
                         : "No flyable budget remains after fixed dues and instruction."}
                     </p>
                   </div>
