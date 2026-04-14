@@ -135,13 +135,13 @@ describe("budget view", () => {
     expect(projection.remainingFlyingBudget).toBe(2214);
     expect(projection.cheapestPlane?.planeId).toBe("plane-2");
     expect(projection.cheapestPlane?.hourlyRate).toBe(150);
-    expect(projection.projectedBillableHours).toBe(14.76);
-    expect(projection.projectedActualHours).toBe(14.76);
+    expect(projection.projectedBillableHours).toBe(20);
+    expect(projection.projectedActualHours).toBe(20);
     expect(projection.typicalFlightHours).toBe(1.6);
-    expect(projection.projectedFlights).toBe(9);
+    expect(projection.projectedFlights).toBe(12);
     expect(projection.flightsCompletedThisYear).toBe(3);
-    expect(projection.flightsRemainingThisYear).toBe(6);
-    expect(projection.projectedFlightsCompletionPercent).toBe(33.33);
+    expect(projection.flightsRemainingThisYear).toBe(9);
+    expect(projection.projectedFlightsCompletionPercent).toBe(25);
   });
 
   it("uses an override instruction budget and floors negative remaining flying budget", () => {

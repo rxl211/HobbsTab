@@ -491,10 +491,8 @@ export const BudgetPage = () => {
                           : `That instruction amount uses the median instructor spend from ${instructionYearsLabel}, including zero-spend years in that window.`}
                       </p>
                       <p className="subtle">
-                        Then subtracted {formatCurrency(projection.aircraftSpendThisYear)} already
-                        spent on airplane time this year, leaving{" "}
-                        {formatCurrency(projection.remainingFlyingBudget)} for future flying at the
-                        cheapest current rate of{" "}
+                        That leaves {formatCurrency(projection.plannedFlyingBudget)} in annual
+                        flying budget at the cheapest current rate of{" "}
                         {formatCurrency(projection.cheapestPlane?.hourlyRate ?? 0)}/
                         {projection.cheapestPlane?.billingTimeType} hr.
                       </p>

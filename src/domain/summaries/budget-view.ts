@@ -223,7 +223,7 @@ export const buildBudgetProjection = ({
 
   const projectedBillableHours =
     cheapestPlane && annualBudgetValue !== undefined
-      ? roundHours(remainingFlyingBudget / cheapestPlane.hourlyRate)
+      ? roundHours(plannedFlyingBudget / cheapestPlane.hourlyRate)
       : undefined;
 
   const tachFlights = flightEntries.filter(

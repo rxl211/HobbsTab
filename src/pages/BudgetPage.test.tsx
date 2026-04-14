@@ -106,6 +106,8 @@ describe("BudgetPage", () => {
 
     fireEvent.click(screen.getByText("How was projected flights calculated?"));
     expect(screen.getByText(/reserved for instruction/i)).toBeInTheDocument();
+    expect(screen.getByText(/That leaves \$3,800\.00 in annual flying budget/i)).toBeInTheDocument();
+    expect(screen.queryByText(/already spent on airplane time this year/i)).not.toBeInTheDocument();
   });
 
   it("keeps the annual budget editor closed after loading saved data on refresh", async () => {
