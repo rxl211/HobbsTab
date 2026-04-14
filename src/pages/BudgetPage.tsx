@@ -428,8 +428,11 @@ export const BudgetPage = () => {
             <article className="card viz-budget-card">
               <div className="section-heading">
                 <div>
-                  <h3>Cheapest plane snapshot</h3>
-                  <p className="subtle">Current lowest active rate effective today.</p>
+                  <h3>{currentYear} Projection Snapshot</h3>
+                  <p className="subtle">
+                    Based on current lowest active rate effective today, your annual budget and
+                    more.
+                  </p>
                 </div>
               </div>
               {projection.cheapestPlane ? (
