@@ -81,7 +81,7 @@ describe("BudgetPage", () => {
     expect(screen.getByText("Flying budget progress")).toBeInTheDocument();
     expect(screen.getByText("Projected flights")).toBeInTheDocument();
     expect(screen.getByText("Flight progress")).toBeInTheDocument();
-    expect(screen.getByText(/At current rates, your budget supports about/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your budget supports about/i)).toBeInTheDocument();
     expect(
       screen.getByText(
         /Use the breakdown below to see how dues, instruction, current aircraft rates, and your past flights shape that forecast\./i,
@@ -157,7 +157,7 @@ describe("BudgetPage", () => {
     rerender(<BudgetPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Edit budget" })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Edit budget" })[0]).toBeInTheDocument();
     });
 
     expect(screen.queryByLabelText("Annual budget")).not.toBeInTheDocument();

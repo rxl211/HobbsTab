@@ -100,9 +100,7 @@ export const BudgetPage = () => {
     ? undefined
     : projection.projectedFlights !== undefined && projection.projectedActualHours !== undefined
       ? {
-          title: `At current rates, your budget supports about ${formatNumber(
-            projection.projectedFlights,
-          )} flights this year.`,
+          title: `Your budget supports about ${formatNumber(projection.projectedFlights)} flights this year`,
           detail:
             "Use the breakdown below to see how dues, instruction, current aircraft rates, and your past flights shape that forecast.",
         }
@@ -459,7 +457,7 @@ export const BudgetPage = () => {
                 </strong>
                 {projection.projectedActualHours !== undefined ? (
                   <p className="subtle">
-                    {formatHours(projection.projectedActualHours)} projected flight hours.
+                    {formatNumber(projection.projectedActualHours)} projected flight hours.
                   </p>
                 ) : projection.projectedFlightsUnavailableReason ===
                   "No active plane/rate is available yet." ? (
