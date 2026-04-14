@@ -236,6 +236,56 @@ button {
   justify-content: flex-end;
 }
 
+.history-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-filter-button.active {
+  background: #14213d;
+  color: #fffdf7;
+}
+
+.history-filter-button-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.history-filter-button-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.history-filter-popover {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(20, 33, 61, 0.08);
+  box-shadow: 0 16px 36px rgba(20, 33, 61, 0.08);
+}
+
+.history-filter-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.history-filter-popover-header h3 {
+  margin: 0 0 4px;
+}
+
 .link-button {
   border: 0;
   background: transparent;
